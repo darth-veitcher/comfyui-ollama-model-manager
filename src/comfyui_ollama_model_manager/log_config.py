@@ -21,7 +21,9 @@ def scrub_secrets(text: str) -> str:
 
 def patch_record(record):
     """Enrich log records with context and scrub secrets."""
-    record["extra"]["cid"] = cid.get()
+    # Ensure 'cid' exists in extra, with default if not set
+    if "cid" not in record["extra"]:
+        record["extra"]["cid"] = cid.get()
     record["message"] = scrub_secrets(record["message"])
     return record
 
@@ -55,9 +57,14 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logger.remove()
 
 # Console output
+def format_record(record):
+    """Custom formatter that handles missing cid gracefully."""
+    cid_value = record["extra"].get("cid", "-")
+    return f"<green>{record['time']:HH:mm:ss}</green> | <level>{record['level'].name: <8}</level> | <cyan>{cid_value}</cyan> | <level>{record['message']}</level>\n"
+
 logger.add(
     sys.stderr,
-    format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{extra[cid]}</cyan> | <level>{message}</level>",
+    format=format_record,
     level="INFO",
     colorize=True,
 )
