@@ -24,32 +24,30 @@ async def fetch_models_from_ollama(endpoint: str) -> List[str]:
     """
     base = endpoint.rstrip("/")
     url = f"{base}/api/tags"
-    
+
     log.info(f"🔍 Fetching models from {url}")
-    
+
     try:
         async with httpx.AsyncClient(timeout=20.0) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             data = resp.json()
-        
+
         # API shape: {"models": [{"name": "llama3.2"}, ...]}
         names = [m["name"] for m in data.get("models", [])]
-        
+
         log.info(f"✅ Found {len(names)} models")
         log.debug(f"Models: {names}")
-        
+
         return names
-        
+
     except httpx.HTTPError as e:
         log.error(f"❌ Failed to fetch models from {url}: {e}")
         raise
 
 
 async def load_model(
-    endpoint: str,
-    model: str,
-    keep_alive: str = "-1"
+    endpoint: str, model: str, keep_alive: str = "-1"
 ) -> Dict[str, Any]:
     """
     Load a model into Ollama's memory.
@@ -89,7 +87,7 @@ async def load_model(
         # Fallback /api/generate (documented)
         url = f"{base}/api/generate"
         log.debug(f"Falling back to {url}")
-        
+
         try:
             r = await client.post(url, json=payload)
             r.raise_for_status()
@@ -118,9 +116,9 @@ async def unload_model(endpoint: str, model: str) -> Dict[str, Any]:
     """
     base = endpoint.rstrip("/")
     url = f"{base}/api/generate"
-    
+
     log.info(f"⬆️  Unloading model '{model}'")
-    
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(
@@ -130,7 +128,7 @@ async def unload_model(endpoint: str, model: str) -> Dict[str, Any]:
             r.raise_for_status()
             log.info(f"✅ Model '{model}' unloaded successfully")
             return r.json()
-            
+
     except httpx.HTTPError as e:
         log.error(f"❌ Failed to unload model '{model}': {e}")
         raise

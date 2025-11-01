@@ -45,4 +45,7 @@ filterwarnings = [
     "ignore::RuntimeWarning:warnings",
     "ignore::RuntimeWarning:contextlib",
     "ignore::RuntimeWarning:json.encoder",
+    "ignore::RuntimeWarning:re._parser",
+    "ignore::RuntimeWarning:loguru._datetime",
+    "ignore::RuntimeWarning:loguru._colorizer",
 ]

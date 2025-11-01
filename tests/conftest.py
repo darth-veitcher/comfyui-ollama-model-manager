@@ -1,7 +1,8 @@
 """Pytest configuration and fixtures."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from comfyui_ollama_model_manager.state import set_models
 
@@ -36,7 +37,7 @@ def mock_httpx_client(sample_models):
         "models": [{"name": name} for name in sample_models]
     }
     mock_response.raise_for_status = MagicMock()
-    
+
     # Create an AsyncMock for the client itself
     mock_client = AsyncMock()
     # Mock the context manager methods
@@ -45,5 +46,5 @@ def mock_httpx_client(sample_models):
     # Mock the HTTP methods
     mock_client.get.return_value = mock_response
     mock_client.post.return_value = mock_response
-    
+
     return mock_client

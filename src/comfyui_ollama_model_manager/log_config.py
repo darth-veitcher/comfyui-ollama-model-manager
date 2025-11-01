@@ -1,10 +1,11 @@
 """Logging configuration for ComfyUI Ollama Model Manager."""
 
-import sys
-import logging
 import contextvars
+import logging
 import re
+import sys
 from pathlib import Path
+
 from loguru import logger
 
 # Context variable for request correlation
@@ -56,11 +57,13 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 # Configure Loguru sinks
 logger.remove()
 
+
 # Console output
 def format_record(record):
     """Custom formatter that handles missing cid gracefully."""
     cid_value = record["extra"].get("cid", "-")
     return f"<green>{record['time']:HH:mm:ss}</green> | <level>{record['level'].name: <8}</level> | <cyan>{cid_value}</cyan> | <level>{record['message']}</level>\n"
+
 
 logger.add(
     sys.stderr,

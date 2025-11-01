@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from typing import Tuple
+from typing import Optional, Tuple
 
 from .async_utils import run_async
 from .log_config import get_logger, set_request_id
@@ -35,29 +35,29 @@ class OllamaRefreshModelList:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("models_json",)
     FUNCTION = "run"
-    CATEGORY = "Ollama/Enum"
+    CATEGORY = "Ollama"
 
     def run(self, endpoint: str) -> Tuple[str]:
         """Refresh the list of available models from Ollama."""
         # Set correlation ID for this operation
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"refresh-{request_id}")
-        
+
         log.info(f"🔄 Refreshing model list from {endpoint}")
-        
+
         try:
             names = run_async(fetch_models_from_ollama(endpoint))
-            
+
             if not names:
                 log.warning("⚠️  No models returned from Ollama")
                 names = ["<no-models-returned>"]
-            
+
             set_models(endpoint, names)
             result = json.dumps(names, indent=2)
-            
+
             log.info(f"✅ Model list refreshed: {len(names)} models available")
             return (result,)
-            
+
         except Exception as e:
             log.exception(f"💥 Failed to refresh model list: {e}")
             raise
@@ -65,65 +65,80 @@ class OllamaRefreshModelList:
 
 class OllamaSelectModel:
     """
-    Present cached models as a dropdown.
-    
-    This node dynamically updates its dropdown based on the cached models.
-    ComfyUI will re-query INPUT_TYPES when IS_CHANGED indicates a change.
+    Select a model either by typing its name or from the refreshed list.
+
+    If models_json is provided (connected from OllamaRefreshModelList), it will
+    parse the JSON and offer those models as options. Otherwise, uses cached models
+    or allows manual string entry.
     """
 
     @classmethod
     def INPUT_TYPES(cls):
         models = get_models()
         if not models:
-            # User hasn't refreshed yet
-            models = ["<run-OllamaRefreshModelList-first>"]
+            models = []
+
         return {
             "required": {
                 "model": (
-                    models,
-                    {"default": models[0]},
+                    "STRING",
+                    {
+                        "default": models[0] if models else "",
+                        "multiline": False,
+                    },
                 ),
-            }
+            },
+            "optional": {
+                "models_json": ("STRING", {"forceInput": True}),
+            },
         }
 
     @classmethod
-    def IS_CHANGED(cls, model):
+    def IS_CHANGED(cls, model, models_json=None):
         """Force UI to re-query INPUT_TYPES when models cache changes."""
-        # Return a hash of the current models list
-        # When this changes, ComfyUI will re-query INPUT_TYPES
         models = get_models()
         return str(hash(tuple(models)))
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("model",)
     FUNCTION = "run"
-    CATEGORY = "Ollama/Enum"
+    CATEGORY = "Ollama"
 
-    def run(self, model: str) -> Tuple[str]:
-        """Select a model from the cached list."""
+    def run(self, model: str, models_json: Optional[str] = None) -> Tuple[str]:
+        """Select a model from the cached list or use provided model name."""
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"select-{request_id}")
-        
+
+        # If models_json is provided, update the cache
+        if models_json:
+            try:
+                models = json.loads(models_json)
+                if isinstance(models, list):
+                    # Update global cache so other nodes can use it
+                    endpoint = get_endpoint()
+                    set_models(endpoint, models)
+                    log.debug(
+                        f"Updated model cache from connected input: {len(models)} models"
+                    )
+            except json.JSONDecodeError:
+                log.warning(f"Failed to parse models_json: {models_json}")
+
         log.info(f"🎯 Selected model: '{model}'")
-        
+
         # Just echo the selection forward
         return (model,)
 
 
 class OllamaLoadSelectedModel:
     """
-    Loads a model that was selected from OllamaSelectModel.
+    Loads a model into Ollama's memory.
 
-    You can also override the endpoint here in case the refresh node pointed
-    at a different server.
+    Accepts model name as string (manual entry or from OllamaSelectModel).
+    If Ollama doesn't have the model, it will attempt to pull it automatically.
     """
 
     @classmethod
     def INPUT_TYPES(cls):
-        # We re-use the cached list to offer another enum here
-        models = get_models()
-        if not models:
-            models = ["<run-OllamaRefreshModelList-first>"]
         return {
             "required": {
                 "endpoint": (
@@ -134,8 +149,11 @@ class OllamaLoadSelectedModel:
                     },
                 ),
                 "model": (
-                    models,
-                    {"default": models[0]},
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": False,
+                    },
                 ),
                 "keep_alive": (
                     "STRING",
@@ -144,34 +162,49 @@ class OllamaLoadSelectedModel:
                         "multiline": False,
                     },
                 ),
-            }
+            },
+            "optional": {
+                "models_json": ("STRING", {"forceInput": True}),
+            },
         }
-
-    @classmethod
-    def IS_CHANGED(cls, endpoint, model, keep_alive):
-        """Force UI to re-query INPUT_TYPES when models cache changes."""
-        models = get_models()
-        return str(hash(tuple(models)))
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("result",)
     FUNCTION = "run"
-    CATEGORY = "Ollama/Enum"
+    CATEGORY = "Ollama"
 
-    def run(self, endpoint: str, model: str, keep_alive: str) -> Tuple[str]:
+    def run(
+        self,
+        endpoint: str,
+        model: str,
+        keep_alive: str,
+        models_json: Optional[str] = None,
+    ) -> Tuple[str]:
         """Load the selected model into Ollama's memory."""
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"load-{request_id}")
-        
+
+        # If models_json is provided, update the cache
+        if models_json:
+            try:
+                models = json.loads(models_json)
+                if isinstance(models, list):
+                    set_models(endpoint, models)
+                    log.debug(
+                        f"Updated model cache from connected input: {len(models)} models"
+                    )
+            except json.JSONDecodeError:
+                log.warning(f"Failed to parse models_json: {models_json}")
+
         log.info(f"🚀 Loading model '{model}' from {endpoint}")
-        
+
         try:
             data = run_async(load_model(endpoint, model, keep_alive))
             result = json.dumps(data, indent=2)
-            
+
             log.info(f"✅ Model '{model}' loaded successfully")
             return (result,)
-            
+
         except Exception as e:
             log.exception(f"💥 Failed to load model '{model}': {e}")
             raise
@@ -179,14 +212,13 @@ class OllamaLoadSelectedModel:
 
 class OllamaUnloadSelectedModel:
     """
-    Unloads a model selected from the cached list (keep_alive=0).
+    Unloads a model from Ollama's memory (keep_alive=0).
+
+    Accepts model name as string (manual entry or from OllamaSelectModel).
     """
 
     @classmethod
     def INPUT_TYPES(cls):
-        models = get_models()
-        if not models:
-            models = ["<run-OllamaRefreshModelList-first>"]
         return {
             "required": {
                 "endpoint": (
@@ -197,37 +229,51 @@ class OllamaUnloadSelectedModel:
                     },
                 ),
                 "model": (
-                    models,
-                    {"default": models[0]},
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": False,
+                    },
                 ),
-            }
+            },
+            "optional": {
+                "models_json": ("STRING", {"forceInput": True}),
+            },
         }
-
-    @classmethod
-    def IS_CHANGED(cls, endpoint, model):
-        """Force UI to re-query INPUT_TYPES when models cache changes."""
-        models = get_models()
-        return str(hash(tuple(models)))
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("result",)
     FUNCTION = "run"
-    CATEGORY = "Ollama/Enum"
+    CATEGORY = "Ollama"
 
-    def run(self, endpoint: str, model: str) -> Tuple[str]:
+    def run(
+        self, endpoint: str, model: str, models_json: Optional[str] = None
+    ) -> Tuple[str]:
         """Unload the selected model from Ollama's memory."""
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"unload-{request_id}")
-        
+
+        # If models_json is provided, update the cache
+        if models_json:
+            try:
+                models = json.loads(models_json)
+                if isinstance(models, list):
+                    set_models(endpoint, models)
+                    log.debug(
+                        f"Updated model cache from connected input: {len(models)} models"
+                    )
+            except json.JSONDecodeError:
+                log.warning(f"Failed to parse models_json: {models_json}")
+
         log.info(f"🗑️  Unloading model '{model}' from {endpoint}")
-        
+
         try:
             data = run_async(unload_model(endpoint, model))
             result = json.dumps(data, indent=2)
-            
+
             log.info(f"✅ Model '{model}' unloaded successfully")
             return (result,)
-            
+
         except Exception as e:
             log.exception(f"💥 Failed to unload model '{model}': {e}")
             raise

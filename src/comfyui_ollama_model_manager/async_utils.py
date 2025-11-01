@@ -17,7 +17,7 @@ _executor = ThreadPoolExecutor(max_workers=4)
 def run_async(coro: Coroutine[None, None, T]) -> T:
     """
     Run async coroutine from sync context.
-    
+
     When called from within an existing event loop (like ComfyUI's),
     runs the coroutine in a separate thread with its own event loop.
     Otherwise, creates a new event loop.

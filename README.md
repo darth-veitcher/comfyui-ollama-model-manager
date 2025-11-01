@@ -55,31 +55,51 @@ ComfyUI\python_embeded\python.exe -m pip install httpx loguru rich
 | **Ollama (Load Selected Model)** | Loads the selected model into memory |
 | **Ollama (Unload Selected Model)** | Unloads the model to free memory |
 
-## Example Workflow
+## Usage
+
+### Two Ways to Specify Models
+
+#### 1. Connected Workflow (Recommended)
+Connect the `models_json` output from **Refresh Model List** to the other nodes:
 
 ```text
-Refresh Model List → Select Model → Load Model → [Your Ollama Node] → Unload Model
+[Refresh Model List] → models_json → [Select/Load/Unload Model]
+                                   ↓
+                              (Type model name)
 ```
 
-**Typical use case:**
+This automatically updates the available models and caches them for all nodes.
 
+#### 2. Manual Entry (Flexible)
+Simply type any model name directly into the `model` field:
+
+- Existing models: `llama3.2`, `mistral`, `llava:latest`
+- New models: Ollama will automatically pull them on first load
+
+### Example Workflows
+
+**Basic workflow:**
 ```text
-Refresh Models → Select "llava:latest" → Load Model → 
-  Caption Image with LLaVA → Unload Model → 
+Refresh Model List → Load Model (llama3.2) → [Your Ollama Node] → Unload Model
+```
+
+**Connected workflow:**
+```text
+Refresh Model List ──(models_json)──→ Select Model ─→ Load Model
+                                           ↓              ↓
+                                      (Pick from list)  [Ollama Processing]
+                                                         ↓
+                                                    Unload Model
+```
+
+**Vision model workflow:**
+```text
+Refresh Models → Load Model (llava:latest) →
+  Caption Image with LLaVA → Unload Model →
   Text to Image with Stable Diffusion
 ```
 
-This pattern ensures you can use vision/language models without keeping them loaded during image generation.
-
-### Important: Refreshing Dropdowns
-
-After running the "Refresh Model List" node:
-
-1. **Right-click** on Select/Load/Unload nodes
-2. Choose **"Refresh"** from the context menu
-3. The dropdown will update with the latest models
-
-Alternatively, reload your workflow file to refresh all node dropdowns.
+This pattern optimizes memory by unloading models when not needed.
 
 ## Configuration
 

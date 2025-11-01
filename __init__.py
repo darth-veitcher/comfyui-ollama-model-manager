@@ -5,9 +5,9 @@
 @description: Custom nodes for managing Ollama models in ComfyUI workflows. Load and unload models on-demand to optimize memory usage.
 """
 
-import sys
-import os
 import logging
+import os
+import sys
 
 # Add src directory to path for imports
 custom_nodes_path = os.path.dirname(__file__)
@@ -28,16 +28,18 @@ except ImportError:
         if os.path.exists(install_path):
             # Run install.py as a module
             import importlib.util
+
             spec = importlib.util.spec_from_file_location("install", install_path)
             if spec and spec.loader:
                 install_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(install_module)
                 install_module.install_dependencies()  # type: ignore
-                
+
                 # Try importing again
                 import httpx  # noqa: F401
                 import loguru  # noqa: F401
                 import rich  # noqa: F401
+
                 logging.info("[Ollama Manager] ✅ Dependencies installed successfully")
             else:
                 raise ImportError("Could not load install.py")
@@ -49,15 +51,14 @@ except ImportError:
             "Please install manually: pip install httpx loguru rich"
         )
         raise ImportError(
-            "Required dependencies not installed. "
-            "Run: pip install httpx loguru rich"
+            "Required dependencies not installed. " "Run: pip install httpx loguru rich"
         ) from e
 
 # Import nodes from src package
 from comfyui_ollama_model_manager.nodes import (  # noqa: E402
+    OllamaLoadSelectedModel,
     OllamaRefreshModelList,
     OllamaSelectModel,
-    OllamaLoadSelectedModel,
     OllamaUnloadSelectedModel,
 )
 
