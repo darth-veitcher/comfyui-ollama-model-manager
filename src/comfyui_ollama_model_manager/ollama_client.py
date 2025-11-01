@@ -84,12 +84,18 @@ async def load_model(
         except httpx.HTTPError as e:
             log.debug(f"/api/load not available or failed: {e}")
 
-        # Fallback /api/generate (documented)
+        # Fallback /api/generate (requires prompt field)
         url = f"{base}/api/generate"
         log.debug(f"Falling back to {url}")
 
         try:
-            r = await client.post(url, json=payload)
+            # /api/generate requires a prompt, use empty string to just load model
+            generate_payload = {
+                "model": model,
+                "prompt": "",
+                "keep_alive": keep_alive,
+            }
+            r = await client.post(url, json=generate_payload)
             r.raise_for_status()
             log.info(f"✅ Model '{model}' loaded successfully via /api/generate")
             return r.json()
