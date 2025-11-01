@@ -57,18 +57,29 @@ ComfyUI\python_embeded\python.exe -m pip install httpx loguru rich
 
 ## Example Workflow
 
-```
+```text
 Refresh Model List → Select Model → Load Model → [Your Ollama Node] → Unload Model
 ```
 
 **Typical use case:**
-```
+
+```text
 Refresh Models → Select "llava:latest" → Load Model → 
   Caption Image with LLaVA → Unload Model → 
   Text to Image with Stable Diffusion
 ```
 
 This pattern ensures you can use vision/language models without keeping them loaded during image generation.
+
+### Important: Refreshing Dropdowns
+
+After running the "Refresh Model List" node:
+
+1. **Right-click** on Select/Load/Unload nodes
+2. Choose **"Refresh"** from the context menu
+3. The dropdown will update with the latest models
+
+Alternatively, reload your workflow file to refresh all node dropdowns.
 
 ## Configuration
 

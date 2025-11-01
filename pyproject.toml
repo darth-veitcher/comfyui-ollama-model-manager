@@ -44,4 +44,5 @@ filterwarnings = [
     "ignore::RuntimeWarning:unittest.mock",
     "ignore::RuntimeWarning:warnings",
     "ignore::RuntimeWarning:contextlib",
+    "ignore::RuntimeWarning:json.encoder",
 ]

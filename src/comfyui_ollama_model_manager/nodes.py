@@ -67,11 +67,8 @@ class OllamaSelectModel:
     """
     Present cached models as a dropdown.
     
-    If nothing is cached yet, show a placeholder and tell user to run the
-    refresh node.
-
-    This is the part that makes it "strongly typed" from ComfyUI's POV:
-    the user *cannot* type an arbitrary string, they must pick from the list.
+    This node dynamically updates its dropdown based on the cached models.
+    ComfyUI will re-query INPUT_TYPES when IS_CHANGED indicates a change.
     """
 
     @classmethod
@@ -88,6 +85,14 @@ class OllamaSelectModel:
                 ),
             }
         }
+
+    @classmethod
+    def IS_CHANGED(cls, model):
+        """Force UI to re-query INPUT_TYPES when models cache changes."""
+        # Return a hash of the current models list
+        # When this changes, ComfyUI will re-query INPUT_TYPES
+        models = get_models()
+        return str(hash(tuple(models)))
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("model",)
@@ -142,6 +147,12 @@ class OllamaLoadSelectedModel:
             }
         }
 
+    @classmethod
+    def IS_CHANGED(cls, endpoint, model, keep_alive):
+        """Force UI to re-query INPUT_TYPES when models cache changes."""
+        models = get_models()
+        return str(hash(tuple(models)))
+
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("result",)
     FUNCTION = "run"
@@ -191,6 +202,12 @@ class OllamaUnloadSelectedModel:
                 ),
             }
         }
+
+    @classmethod
+    def IS_CHANGED(cls, endpoint, model):
+        """Force UI to re-query INPUT_TYPES when models cache changes."""
+        models = get_models()
+        return str(hash(tuple(models)))
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("result",)
