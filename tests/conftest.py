@@ -37,10 +37,13 @@ def mock_httpx_client(sample_models):
     }
     mock_response.raise_for_status = MagicMock()
     
-    mock_client = MagicMock()
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-    mock_client.get = AsyncMock(return_value=mock_response)
-    mock_client.post = AsyncMock(return_value=mock_response)
+    # Create an AsyncMock for the client itself
+    mock_client = AsyncMock()
+    # Mock the context manager methods
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    # Mock the HTTP methods
+    mock_client.get.return_value = mock_response
+    mock_client.post.return_value = mock_response
     
     return mock_client

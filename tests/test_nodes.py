@@ -1,8 +1,7 @@
 """Tests for ComfyUI node classes."""
 
-import pytest
 import json
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 
 from comfyui_ollama_model_manager.nodes import (
     OllamaRefreshModelList,
@@ -45,8 +44,9 @@ class TestOllamaRefreshModelList:
         models_json = json.loads(result[0])
         assert models_json == sample_models
     
+    @patch("comfyui_ollama_model_manager.nodes.fetch_models_from_ollama")
     @patch("comfyui_ollama_model_manager.nodes.run_async")
-    def test_run_empty_models(self, mock_run_async, mock_endpoint):
+    def test_run_empty_models(self, mock_run_async, mock_fetch, mock_endpoint):
         """Test handling when no models are returned."""
         mock_run_async.return_value = []
         

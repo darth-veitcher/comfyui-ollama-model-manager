@@ -32,9 +32,16 @@ addopts = [
     "-v",
     "--strict-markers",
     "--tb=short",
-    "--disable-warnings",
 ]
 markers = [
     "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
+filterwarnings = [
+    # Ignore warnings about unawaited coroutines from mock internals
+    # These occur when pytest pickles/copies mock objects that reference async functions
+    "ignore::RuntimeWarning:copyreg",
+    "ignore::RuntimeWarning:unittest.mock",
+    "ignore::RuntimeWarning:warnings",
+    "ignore::RuntimeWarning:contextlib",
 ]
