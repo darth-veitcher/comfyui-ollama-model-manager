@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pyre/
+.pytype/
+.pyright/
+.ipynb_checkpoints
+
+# Virtual environments
+.venv
+
+# Package specific
+logs/*.json
