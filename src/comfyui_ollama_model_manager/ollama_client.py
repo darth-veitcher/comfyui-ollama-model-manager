@@ -84,21 +84,37 @@ async def load_model(
         except httpx.HTTPError as e:
             log.debug(f"/api/load not available or failed: {e}")
 
-        # Fallback /api/generate (requires prompt field)
+        # Fallback /api/generate (requires prompt field, returns streaming response)
         url = f"{base}/api/generate"
         log.debug(f"Falling back to {url}")
 
         try:
             # /api/generate requires a prompt, use empty string to just load model
+            # Set stream=false to get a single JSON response instead of streaming
             generate_payload = {
                 "model": model,
                 "prompt": "",
+                "stream": False,
                 "keep_alive": keep_alive,
             }
             r = await client.post(url, json=generate_payload)
+            
+            # Log response details if there's an error
+            if r.status_code >= 400:
+                log.error(f"Ollama API error response: {r.text}")
+            
             r.raise_for_status()
             log.info(f"✅ Model '{model}' loaded successfully via /api/generate")
             return r.json()
+        except httpx.HTTPStatusError as e:
+            log.error(f"❌ Failed to load model '{model}': {e}")
+            # Try to get more details from response
+            try:
+                error_detail = e.response.text
+                log.error(f"Error details: {error_detail}")
+            except Exception:
+                pass
+            raise
         except httpx.HTTPError as e:
             log.error(f"❌ Failed to load model '{model}': {e}")
             raise
