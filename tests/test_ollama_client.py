@@ -83,6 +83,13 @@ async def test_load_model_with_keep_alive(mock_httpx_client, mock_endpoint):
 
 
 @pytest.mark.asyncio
+async def test_load_model_empty_name(mock_endpoint):
+    """Test that loading a model with empty name raises ValueError."""
+    with pytest.raises(ValueError, match="Model name cannot be empty"):
+        await load_model(mock_endpoint, "", "-1")
+
+
+@pytest.mark.asyncio
 async def test_unload_model_success(mock_httpx_client, mock_endpoint):
     """Test successfully unloading a model."""
     with patch(

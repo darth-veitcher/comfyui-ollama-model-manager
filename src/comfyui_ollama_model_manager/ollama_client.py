@@ -57,15 +57,25 @@ async def load_model(
     Args:
         endpoint: Base URL for Ollama API
         model: Name of the model to load
-        keep_alive: Time to keep model in memory (-1 = indefinite)
+        keep_alive: Time to keep model in memory (e.g., "5m", "1h", "0", or "-1" for indefinite)
 
     Returns:
         Response data from Ollama API
 
     Raises:
         httpx.HTTPError: If the request fails
+        ValueError: If model name is empty
     """
+    if not model or not model.strip():
+        raise ValueError("Model name cannot be empty")
+    
     base = endpoint.rstrip("/")
+    
+    # Convert -1 to a valid duration string for /api/generate
+    # /api/load accepts -1, but /api/generate needs proper duration format
+    # Use a very long duration (999 years) to simulate "indefinite"
+    keep_alive_for_generate = "8760000h" if keep_alive == "-1" else keep_alive
+    
     payload: Dict[str, Any] = {"model": model}
     if keep_alive:
         payload["keep_alive"] = keep_alive
@@ -95,7 +105,7 @@ async def load_model(
                 "model": model,
                 "prompt": "",
                 "stream": False,
-                "keep_alive": keep_alive,
+                "keep_alive": keep_alive_for_generate,
             }
             r = await client.post(url, json=generate_payload)
             
