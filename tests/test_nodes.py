@@ -24,10 +24,11 @@ class TestOllamaRefreshModelList:
 
     def test_class_attributes(self):
         """Test node class attributes."""
-        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "*")
-        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json", "dependencies")
+        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "STRING", "*")
+        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json", "display", "dependencies")
         assert OllamaRefreshModelList.FUNCTION == "run"
         assert OllamaRefreshModelList.CATEGORY == "Ollama"
+        assert OllamaRefreshModelList.OUTPUT_NODE is True
 
     @patch("comfyui_ollama_model_manager.nodes.run_async")
     def test_run_success(self, mock_run_async, mock_endpoint, sample_models):
@@ -38,13 +39,22 @@ class TestOllamaRefreshModelList:
         result = node.run(mock_endpoint)
 
         assert isinstance(result, tuple)
-        assert len(result) == 2
+        assert len(result) == 3
 
         # Parse the JSON result
         models_json = json.loads(result[0])
         assert models_json == sample_models
+        
+        # Check display text is formatted nicely
+        display_text = result[1]
+        assert isinstance(display_text, str)
+        assert "Available Ollama Models" in display_text
+        assert "llama3.2" in display_text
+        assert "mistral" in display_text
+        assert "=" in display_text  # Has separators
+        
         # dependencies should be None when not provided
-        assert result[1] is None
+        assert result[2] is None
 
     @patch("comfyui_ollama_model_manager.nodes.fetch_models_from_ollama")
     @patch("comfyui_ollama_model_manager.nodes.run_async")
@@ -57,7 +67,12 @@ class TestOllamaRefreshModelList:
 
         models_json = json.loads(result[0])
         assert models_json == ["<no-models-returned>"]
-        assert result[1] is None
+        
+        # Check display shows the placeholder
+        display_text = result[1]
+        assert "<no-models-returned>" in display_text
+        
+        assert result[2] is None
 
 
 class TestOllamaSelectModel:

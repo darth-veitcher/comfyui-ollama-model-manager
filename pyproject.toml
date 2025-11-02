@@ -40,6 +40,7 @@ markers = [
 filterwarnings = [
     # Ignore warnings about unawaited coroutines from mock internals
     # These occur when pytest pickles/copies mock objects that reference async functions
+    "ignore:coroutine.*was never awaited:RuntimeWarning:unittest.mock",
     "ignore::RuntimeWarning:copyreg",
     "ignore::RuntimeWarning:unittest.mock",
     "ignore::RuntimeWarning:warnings",

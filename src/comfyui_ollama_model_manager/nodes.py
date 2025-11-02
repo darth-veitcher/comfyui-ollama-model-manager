@@ -35,12 +35,13 @@ class OllamaRefreshModelList:
             },
         }
 
-    RETURN_TYPES = ("STRING", "*")
-    RETURN_NAMES = ("models_json", "dependencies")
+    RETURN_TYPES = ("STRING", "STRING", "*")
+    RETURN_NAMES = ("models_json", "display", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
+    OUTPUT_NODE = True
 
-    def run(self, endpoint: str, dependencies=None) -> Tuple[str, Any]:
+    def run(self, endpoint: str, dependencies=None) -> Tuple[str, str, Any]:
         """Refresh the list of available models from Ollama."""
         # Set correlation ID for this operation
         request_id = str(uuid.uuid4())[:8]
@@ -58,8 +59,22 @@ class OllamaRefreshModelList:
             set_models(endpoint, names)
             result = json.dumps(names, indent=2)
 
+            # Create a pretty formatted display
+            display_lines = [
+                "=" * 50,
+                f"🤖 Available Ollama Models ({len(names)})",
+                "=" * 50,
+                ""
+            ]
+            
+            for i, model in enumerate(names, 1):
+                display_lines.append(f"{i:3d}. {model}")
+            
+            display_lines.extend(["", "=" * 50])
+            display_text = "\n".join(display_lines)
+
             log.info(f"✅ Model list refreshed: {len(names)} models available")
-            return (result, dependencies)
+            return (result, display_text, dependencies)
 
         except Exception as e:
             log.exception(f"💥 Failed to refresh model list: {e}")
@@ -108,7 +123,9 @@ class OllamaSelectModel:
     FUNCTION = "run"
     CATEGORY = "Ollama"
 
-    def run(self, model: str, models_json: Optional[str] = None, dependencies=None) -> Tuple[str, Any]:
+    def run(
+        self, model: str, models_json: Optional[str] = None, dependencies=None
+    ) -> Tuple[str, Any]:
         """Select a model from the cached list or use provided model name."""
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"select-{request_id}")
@@ -254,7 +271,11 @@ class OllamaUnloadSelectedModel:
     CATEGORY = "Ollama"
 
     def run(
-        self, endpoint: str, model: str, models_json: Optional[str] = None, dependencies=None
+        self,
+        endpoint: str,
+        model: str,
+        models_json: Optional[str] = None,
+        dependencies=None,
     ) -> Tuple[str, Any]:
         """Unload the selected model from Ollama's memory."""
         request_id = str(uuid.uuid4())[:8]
