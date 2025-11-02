@@ -1,32 +1,27 @@
 """ComfyUI Ollama Model Manager - Node registration."""
 
-from .nodes import (
-    OllamaLoadSelectedModel,
-    OllamaRefreshModelList,
-    OllamaSelectModel,
-    OllamaUnloadSelectedModel,
-)
+from .nodes import OllamaClient, OllamaLoadModel, OllamaModelSelector, OllamaUnloadModel
 
 # Register nodes with ComfyUI
 NODE_CLASS_MAPPINGS = {
-    "OllamaRefreshModelList": OllamaRefreshModelList,
-    "OllamaSelectModel": OllamaSelectModel,
-    "OllamaLoadSelectedModel": OllamaLoadSelectedModel,
-    "OllamaUnloadSelectedModel": OllamaUnloadSelectedModel,
+    "OllamaClient": OllamaClient,
+    "OllamaModelSelector": OllamaModelSelector,
+    "OllamaLoadModel": OllamaLoadModel,
+    "OllamaUnloadModel": OllamaUnloadModel,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "OllamaRefreshModelList": "Ollama (Refresh Model List)",
-    "OllamaSelectModel": "Ollama (Select Model)",
-    "OllamaLoadSelectedModel": "Ollama (Load Selected Model)",
-    "OllamaUnloadSelectedModel": "Ollama (Unload Selected Model)",
+    "OllamaClient": "Ollama Client",
+    "OllamaModelSelector": "Ollama Model Selector",
+    "OllamaLoadModel": "Ollama Load Model",
+    "OllamaUnloadModel": "Ollama Unload Model",
 }
 
 __all__ = [
-    "OllamaRefreshModelList",
-    "OllamaSelectModel",
-    "OllamaLoadSelectedModel",
-    "OllamaUnloadSelectedModel",
+    "OllamaClient",
+    "OllamaModelSelector",
+    "OllamaLoadModel",
+    "OllamaUnloadModel",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]

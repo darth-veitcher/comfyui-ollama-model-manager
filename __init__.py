@@ -56,25 +56,25 @@ except ImportError:
 
 # Import nodes from src package
 from comfyui_ollama_model_manager.nodes import (  # noqa: E402
-    OllamaLoadSelectedModel,
-    OllamaRefreshModelList,
-    OllamaSelectModel,
-    OllamaUnloadSelectedModel,
+    OllamaClient,
+    OllamaLoadModel,
+    OllamaModelSelector,
+    OllamaUnloadModel,
 )
 
 # Register nodes with ComfyUI
 NODE_CLASS_MAPPINGS = {
-    "OllamaRefreshModelList": OllamaRefreshModelList,
-    "OllamaSelectModel": OllamaSelectModel,
-    "OllamaLoadSelectedModel": OllamaLoadSelectedModel,
-    "OllamaUnloadSelectedModel": OllamaUnloadSelectedModel,
+    "OllamaClient": OllamaClient,
+    "OllamaModelSelector": OllamaModelSelector,
+    "OllamaLoadModel": OllamaLoadModel,
+    "OllamaUnloadModel": OllamaUnloadModel,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "OllamaRefreshModelList": "Ollama (Refresh Model List)",
-    "OllamaSelectModel": "Ollama (Select Model)",
-    "OllamaLoadSelectedModel": "Ollama (Load Selected Model)",
-    "OllamaUnloadSelectedModel": "Ollama (Unload Selected Model)",
+    "OllamaClient": "Ollama Client",
+    "OllamaModelSelector": "Ollama Model Selector",
+    "OllamaLoadModel": "Ollama Load Model",
+    "OllamaUnloadModel": "Ollama Unload Model",
 }
 
 # Tell ComfyUI where to find our web extensions

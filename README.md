@@ -50,53 +50,41 @@ ComfyUI\python_embeded\python.exe -m pip install httpx loguru rich
 
 | Node | Description |
 |------|-------------|
-| **Ollama (Refresh Model List)** | Fetches available models from Ollama API (`/api/tags`) |
-| **Ollama (Select Model)** | Presents cached models as a dropdown selector |
-| **Ollama (Load Selected Model)** | Loads the selected model into memory |
-| **Ollama (Unload Selected Model)** | Unloads the model to free memory |
+| **Ollama Client** | Creates a reusable Ollama connection config |
+| **Ollama Model Selector** | Select model with optional auto-refresh |
+| **Ollama Load Model** | Loads a model into Ollama's memory |
+| **Ollama Unload Model** | Unloads a model to free memory |
 
 ## Usage
 
-### Two Ways to Specify Models
-
-#### 1. Connected Workflow (Recommended)
-Connect the `models_json` output from **Refresh Model List** to the other nodes:
+The architecture provides a clean, composable workflow:
 
 ```text
-[Refresh Model List] → models_json → [Select/Load/Unload Model]
-                                   ↓
-                              (Type model name)
+[Ollama Client] → [Model Selector] → [Load Model] → [Your Processing] → [Unload Model]
+       ↓               ↓                   ↓
+  (endpoint)     (pick model,        (load with
+                  auto-refresh)       keep_alive)
 ```
 
-This automatically updates the available models and caches them for all nodes.
+**Key Benefits:**
+- **Reusable Client**: Create one client, connect to multiple nodes
+- **Auto-refresh**: Model Selector can refresh the list automatically
+- **Type Safety**: Client connection passed between nodes
+- **Cleaner Workflows**: Less redundant endpoint configuration
+- **Dynamic Dropdowns**: Model list automatically populates after refresh
 
-#### 2. Manual Entry (Flexible)
-Simply type any model name directly into the `model` field:
+**Example Workflow:**
 
-- Existing models: `llama3.2`, `mistral`, `llava:latest`
-- New models: Ollama will automatically pull them on first load
-
-### Example Workflows
-
-**Basic workflow:**
 ```text
-Refresh Model List → Load Model (llama3.2) → [Your Ollama Node] → Unload Model
-```
-
-**Connected workflow:**
-```text
-Refresh Model List ──(models_json)──→ Select Model ─→ Load Model
-                                           ↓              ↓
-                                      (Pick from list)  [Ollama Processing]
-                                                         ↓
-                                                    Unload Model
-```
-
-**Vision model workflow:**
-```text
-Refresh Models → Load Model (llava:latest) →
-  Caption Image with LLaVA → Unload Model →
-  Text to Image with Stable Diffusion
+1. Ollama Client (endpoint: http://localhost:11434)
+       ↓
+2. Model Selector (model: "llama3.2", refresh: true)
+       ↓
+3. Load Model (keep_alive: "-1")
+       ↓
+4. [Your Ollama Processing Nodes]
+       ↓
+5. Unload Model
 ```
 
 This pattern optimizes memory by unloading models when not needed.

@@ -1,5 +1,9 @@
 /**
  * Custom widgets for Ollama Model Manager nodes in ComfyUI
+ *
+ * Supports both new and legacy node architectures:
+ * - New: OllamaClient → OllamaModelSelector → Load/Unload
+ * - Legacy: OllamaRefreshModelList → OllamaSelectModel → Load/Unload
  */
 
 import { app } from "../../scripts/app.js";
@@ -50,16 +54,41 @@ function updateModelDropdown(node, models) {
         // Convert to combo widget
         modelWidget.type = "combo";
         modelWidget.options = { values: models };
-        
+
         // Set default value if current value is empty or not in list
         if (!modelWidget.value || !models.includes(modelWidget.value)) {
             modelWidget.value = models[0];
         }
-        
+
         console.log(`[Ollama] Updated dropdown with ${models.length} models`);
         return true;
     }
     return false;
+}
+
+// Helper to get models from connected source node
+function getModelsFromConnectedNode(node) {
+    // Check for client input from OllamaModelSelector
+    const clientInput = node.inputs?.find(i => i.name === "client");
+    if (clientInput && clientInput.link != null) {
+        const link = node.graph.links[clientInput.link];
+        if (link) {
+            const sourceNode = node.graph.getNodeById(link.origin_id);
+
+            // Check if source is OllamaModelSelector
+            if (sourceNode && sourceNode.type === "OllamaModelSelector") {
+                // models_json is the 3rd output (index 2)
+                const modelsJsonOutput = sourceNode.outputs?.[2];
+                if (modelsJsonOutput?.value) {
+                    console.log("[Ollama] Found models from OllamaModelSelector:", modelsJsonOutput.value);
+                    return parseModelsJson(modelsJsonOutput.value);
+                }
+                console.log("[Ollama] No models_json value in OllamaModelSelector output");
+            }
+        }
+    }
+
+    return null;
 }
 
 // Register extension with ComfyUI
@@ -67,126 +96,83 @@ app.registerExtension({
     name: "OllamaModelManager.ModelsDisplay",
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        // Handle OllamaRefreshModelList node
-        if (nodeData.name === "OllamaRefreshModelList") {
-
-            // Store original onExecuted callback
+        // Handle OllamaModelSelector (new architecture)
+        if (nodeData.name === "OllamaModelSelector") {
             const onExecuted = nodeType.prototype.onExecuted;
 
-            // Override onExecuted to handle our custom UI data
             nodeType.prototype.onExecuted = function(message) {
-                // Call original onExecuted if it exists
                 if (onExecuted) {
                     onExecuted.apply(this, arguments);
                 }
 
-                // Handle our custom models display
-                if (message?.models_display) {
-                    const displayText = message.models_display[0];
-                    const modelCount = message.model_count?.[0] || 0;
-                    const modelList = message.model_list?.[0] || [];
+                // Update model dropdown when executed
+                if (message?.models_json) {
+                    const modelsJson = message.models_json[0];
+                    const models = parseModelsJson(modelsJson);
+                    if (models) {
+                        console.log("[Ollama] OllamaModelSelector executed with", models.length, "models");
+                        updateModelDropdown(this, models);
 
-                    // Remove any existing display widget
-                    const existingWidget = this.widgets?.find(w => w.name === "models_display_widget");
-                    if (existingWidget) {
-                        this.widgets = this.widgets.filter(w => w !== existingWidget);
-                    }
-
-                    // Create a custom display widget
-                    const widget = ComfyWidgets["STRING"](this, "models_display_widget", ["STRING", {
-                        multiline: true,
-                        default: displayText
-                    }], app).widget;
-
-                    widget.inputEl.readOnly = true;
-                    widget.inputEl.className = "ollama-models-display";
-                    widget.value = displayText;
-
-                    // Store metadata
-                    widget.modelCount = modelCount;
-                    widget.modelList = modelList;
-
-                    // Adjust widget size
-                    widget.computeSize = function(width) {
-                        return [width, 150];
-                    };
-
-                    // Add the widget
-                    if (!this.widgets) {
-                        this.widgets = [];
-                    }
-                    this.widgets.push(widget);
-
-                    // Update node size
-                    this.setSize(this.computeSize());
-
-                    console.log(`[Ollama] Displayed ${modelCount} models`);
-                }
-            };
-
-            // Add a visual indicator when node is created
-            const onNodeCreated = nodeType.prototype.onNodeCreated;
-            nodeType.prototype.onNodeCreated = function() {
-                if (onNodeCreated) {
-                    onNodeCreated.apply(this, arguments);
-                }
-
-                // Add a helpful text widget by default
-                const infoWidget = this.addWidget("text", "ℹ️ info", "Execute to see models", () => {}, {
-                    serialize: false
-                });
-
-                // Wait for widget to be fully initialized
-                if (infoWidget && infoWidget.inputEl) {
-                    infoWidget.inputEl.readOnly = true;
-                    infoWidget.inputEl.style.opacity = "0.6";
-                    infoWidget.inputEl.style.fontStyle = "italic";
-                }
-            };
-        }
-
-        // Handle OllamaLoadSelectedModel and OllamaUnloadSelectedModel nodes
-        if (nodeData.name === "OllamaLoadSelectedModel" || nodeData.name === "OllamaUnloadSelectedModel") {
-            
-            // Store original onConnectionsChange callback
-            const onConnectionsChange = nodeType.prototype.onConnectionsChange;
-            
-            // Override to detect when models_json is connected
-            nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
-                // Call original callback if it exists
-                if (onConnectionsChange) {
-                    onConnectionsChange.apply(this, arguments);
-                }
-                
-                // Only process input connections
-                if (type === 1 && connected) {  // type 1 = input
-                    // Find the models_json input
-                    const input = this.inputs?.find(i => i.name === "models_json");
-                    if (input && input.link != null) {
-                        // Get the connected node
-                        const link = this.graph.links[input.link];
-                        if (link) {
-                            const sourceNode = this.graph.getNodeById(link.origin_id);
-                            
-                            // If connected to a Refresh node that has already executed
-                            if (sourceNode && sourceNode.type === "OllamaRefreshModelList") {
-                                // Check if the source node has outputs
-                                const outputSlot = sourceNode.outputs?.[0];  // models_json is first output
-                                if (outputSlot?.value) {
-                                    const models = parseModelsJson(outputSlot.value);
-                                    if (models) {
-                                        updateModelDropdown(this, models);
+                        // Notify downstream nodes connected to client output (index 0)
+                        const clientOutput = this.outputs?.[0];
+                        if (clientOutput?.links && clientOutput.links.length > 0) {
+                            for (const linkId of clientOutput.links) {
+                                const link = this.graph.links[linkId];
+                                if (link) {
+                                    const targetNode = this.graph.getNodeById(link.target_id);
+                                    if (targetNode) {
+                                        console.log("[Ollama] Updating dropdown on downstream node:", targetNode.type);
+                                        updateModelDropdown(targetNode, models);
                                     }
                                 }
                             }
                         }
                     }
                 }
-                
+            };
+
+            // Auto-refresh when client is connected
+            const onConnectionsChange = nodeType.prototype.onConnectionsChange;
+            nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
+                if (onConnectionsChange) {
+                    onConnectionsChange.apply(this, arguments);
+                }
+
+                if (type === 1 && connected) {  // Input connected
+                    const input = this.inputs?.find((i, idx) => idx === index);
+                    if (input?.name === "client") {
+                        // Client connected - could trigger auto-refresh here if needed
+                        console.log("[Ollama] Client connected to Model Selector");
+                    }
+                }
+            };
+        }
+
+        // Handle OllamaLoadModel and OllamaUnloadModel
+        if (nodeData.name === "OllamaLoadModel" || nodeData.name === "OllamaUnloadModel") {
+
+            // Store original onConnectionsChange callback
+            const onConnectionsChange = nodeType.prototype.onConnectionsChange;
+
+            // Override to detect when models source is connected
+            nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
+                // Call original callback if it exists
+                if (onConnectionsChange) {
+                    onConnectionsChange.apply(this, arguments);
+                }
+
+                // Only process input connections
+                if (type === 1 && connected) {  // type 1 = input
+                    const models = getModelsFromConnectedNode(this);
+                    if (models) {
+                        updateModelDropdown(this, models);
+                    }
+                }
+
                 // If disconnected, revert to text input
                 if (type === 1 && !connected) {
                     const input = this.inputs?.find((i, idx) => idx === index);
-                    if (input?.name === "models_json") {
+                    if (input?.name === "models_json" || input?.name === "client") {
                         const modelWidget = this.widgets?.find(w => w.name === "model");
                         if (modelWidget && modelWidget.type === "combo") {
                             // Revert to text input
@@ -197,7 +183,7 @@ app.registerExtension({
                     }
                 }
             };
-            
+
             // Override onExecuted to handle updates when connected node executes
             const onExecuted = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function(message) {
@@ -205,50 +191,25 @@ app.registerExtension({
                 if (onExecuted) {
                     onExecuted.apply(this, arguments);
                 }
-                
-                // Check if models_json input is connected
-                const input = this.inputs?.find(i => i.name === "models_json");
-                if (input && input.link != null) {
-                    const link = this.graph.links[input.link];
-                    if (link) {
-                        const sourceNode = this.graph.getNodeById(link.origin_id);
-                        if (sourceNode && sourceNode.type === "OllamaRefreshModelList") {
-                            const outputSlot = sourceNode.outputs?.[0];
-                            if (outputSlot?.value) {
-                                const models = parseModelsJson(outputSlot.value);
-                                if (models) {
-                                    updateModelDropdown(this, models);
-                                }
-                            }
-                        }
-                    }
+
+                const models = getModelsFromConnectedNode(this);
+                if (models) {
+                    updateModelDropdown(this, models);
                 }
             };
-            
+
             // Hook into onConfigure to restore dropdown state when loading workflow
             const onConfigure = nodeType.prototype.onConfigure;
             nodeType.prototype.onConfigure = function(info) {
                 if (onConfigure) {
                     onConfigure.apply(this, arguments);
                 }
-                
+
                 // Defer the check to allow graph to be fully loaded
                 setTimeout(() => {
-                    const input = this.inputs?.find(i => i.name === "models_json");
-                    if (input && input.link != null) {
-                        const link = this.graph.links[input.link];
-                        if (link) {
-                            const sourceNode = this.graph.getNodeById(link.origin_id);
-                            if (sourceNode && sourceNode.type === "OllamaRefreshModelList") {
-                                const outputSlot = sourceNode.outputs?.[0];
-                                if (outputSlot?.value) {
-                                    const models = parseModelsJson(outputSlot.value);
-                                    if (models) {
-                                        updateModelDropdown(this, models);
-                                    }
-                                }
-                            }
-                        }
+                    const models = getModelsFromConnectedNode(this);
+                    if (models) {
+                        updateModelDropdown(this, models);
                     }
                 }, 100);
             };

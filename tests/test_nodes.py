@@ -4,187 +4,175 @@ import json
 from unittest.mock import patch
 
 from comfyui_ollama_model_manager.nodes import (
-    OllamaLoadSelectedModel,
-    OllamaRefreshModelList,
-    OllamaSelectModel,
-    OllamaUnloadSelectedModel,
+    OllamaClient,
+    OllamaLoadModel,
+    OllamaModelSelector,
+    OllamaUnloadModel,
 )
 
 
-class TestOllamaRefreshModelList:
-    """Tests for OllamaRefreshModelList node."""
+class TestOllamaClient:
+    """Tests for OllamaClient node."""
 
     def test_input_types(self):
         """Test INPUT_TYPES returns correct structure."""
-        input_types = OllamaRefreshModelList.INPUT_TYPES()
+        input_types = OllamaClient.INPUT_TYPES()
 
         assert "required" in input_types
         assert "endpoint" in input_types["required"]
-        assert input_types["required"]["endpoint"][0] == "STRING"
 
     def test_class_attributes(self):
         """Test node class attributes."""
-        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "*")
-        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json", "dependencies")
-        assert OllamaRefreshModelList.FUNCTION == "run"
-        assert OllamaRefreshModelList.CATEGORY == "Ollama"
-        assert OllamaRefreshModelList.OUTPUT_NODE is True
+        assert OllamaClient.RETURN_TYPES == ("OLLAMA_CLIENT",)
+        assert OllamaClient.RETURN_NAMES == ("client",)
+        assert OllamaClient.FUNCTION == "create_client"
+        assert OllamaClient.CATEGORY == "Ollama"
+
+    def test_create_client(self, mock_endpoint):
+        """Test creating client config."""
+        node = OllamaClient()
+        result = node.create_client(mock_endpoint)
+
+        assert isinstance(result, tuple)
+        assert len(result) == 1
+
+        client = result[0]
+        assert isinstance(client, dict)
+        assert client["endpoint"] == mock_endpoint
+        assert client["type"] == "ollama_client"
+
+
+class TestOllamaModelSelector:
+    """Tests for OllamaModelSelector node."""
+
+    def test_input_types(self):
+        """Test INPUT_TYPES returns correct structure."""
+        input_types = OllamaModelSelector.INPUT_TYPES()
+
+        assert "required" in input_types
+        assert "client" in input_types["required"]
+        assert "model" in input_types["required"]
+        assert "optional" in input_types
+        assert "refresh" in input_types["optional"]
+
+    def test_class_attributes(self):
+        """Test node class attributes."""
+        assert OllamaModelSelector.RETURN_TYPES == ("OLLAMA_CLIENT", "STRING", "STRING")
+        assert OllamaModelSelector.RETURN_NAMES == ("client", "model", "models_json")
+        assert OllamaModelSelector.FUNCTION == "select_model"
+        assert OllamaModelSelector.CATEGORY == "Ollama"
+        assert OllamaModelSelector.OUTPUT_NODE is True
 
     @patch("comfyui_ollama_model_manager.nodes.run_async")
-    def test_run_success(self, mock_run_async, mock_endpoint, sample_models):
-        """Test running the refresh node successfully."""
+    def test_select_model_with_refresh(
+        self, mock_run_async, mock_endpoint, sample_models
+    ):
+        """Test selecting model with refresh."""
         mock_run_async.return_value = sample_models
 
-        node = OllamaRefreshModelList()
-        result = node.run(mock_endpoint)
+        client = {"endpoint": mock_endpoint, "type": "ollama_client"}
+        node = OllamaModelSelector()
+        result = node.select_model(client, "llama3.2", True)
 
-        # Result should be a dict with "ui" and "result" keys
+        # Should return dict with ui and result
         assert isinstance(result, dict)
         assert "ui" in result
         assert "result" in result
 
-        # Check UI custom widget data
-        assert "models_display" in result["ui"]
-        assert "model_count" in result["ui"]
-        assert "model_list" in result["ui"]
+        # Check result tuple
+        result_tuple = result["result"]
+        assert len(result_tuple) == 3
+        assert result_tuple[0] == client
+        assert result_tuple[1] == "llama3.2"
+        models_json = json.loads(result_tuple[2])
+        assert len(models_json) == len(sample_models)
 
-        display_text = result["ui"]["models_display"][0]
-        assert isinstance(display_text, str)
-        assert "Available Ollama Models" in display_text
-        assert "llama3.2" in display_text
-        assert "mistral" in display_text
-        assert "=" in display_text  # Has separators
+        # Verify mock was called (refresh happened)
+        mock_run_async.assert_called_once()
 
-        assert result["ui"]["model_count"][0] == len(sample_models)
-        assert result["ui"]["model_list"][0] == sample_models
-
-        # Check result tuple - now has 2 elements
-        assert isinstance(result["result"], tuple)
-        assert len(result["result"]) == 2
-
-        # Parse the JSON result
-        models_json = json.loads(result["result"][0])
-        assert models_json == sample_models
-
-        # dependencies should be None when not provided
-        assert result["result"][1] is None
-
-    @patch("comfyui_ollama_model_manager.nodes.fetch_models_from_ollama")
-    @patch("comfyui_ollama_model_manager.nodes.run_async")
-    def test_run_empty_models(self, mock_run_async, mock_fetch, mock_endpoint):
-        """Test handling when no models are returned."""
-        mock_run_async.return_value = []
-
-        node = OllamaRefreshModelList()
-        result = node.run(mock_endpoint)
-
-        # Check result structure
-        models_json = json.loads(result["result"][0])
-        assert models_json == ["<no-models-returned>"]
-
-        # Check display shows the placeholder
-        display_text = result["ui"]["models_display"][0]
-        assert "<no-models-returned>" in display_text
-
-        assert result["ui"]["model_count"][0] == 1
-        assert result["ui"]["model_list"][0] == ["<no-models-returned>"]
-
-        assert result["result"][1] is None
-
-
-class TestOllamaSelectModel:
-    """Tests for OllamaSelectModel node."""
-
-    def test_input_types_with_cache(self, populated_cache):
-        """Test INPUT_TYPES with populated cache."""
-        input_types = OllamaSelectModel.INPUT_TYPES()
-
-        assert "required" in input_types
-        assert "model" in input_types["required"]
-        assert "optional" in input_types
-        assert "models_json" in input_types["optional"]
-
-        # Model input should be STRING type
-        model_input = input_types["required"]["model"]
-        assert model_input[0] == "STRING"
-
-    def test_input_types_empty_cache(self):
-        """Test INPUT_TYPES with empty cache."""
-        # Make sure cache is empty
+    @patch("comfyui_ollama_model_manager.nodes.set_models")
+    def test_select_model_without_refresh(
+        self, mock_set_models, mock_endpoint, sample_models
+    ):
+        """Test selecting model without refresh - uses cached models."""
+        # Pre-populate cache
         from comfyui_ollama_model_manager.state import set_models
 
-        set_models("http://localhost:11434", [])
+        set_models(mock_endpoint, sample_models)
 
-        input_types = OllamaSelectModel.INPUT_TYPES()
-        model_input = input_types["required"]["model"]
+        client = {"endpoint": mock_endpoint, "type": "ollama_client"}
+        node = OllamaModelSelector()
+        result = node.select_model(client, "llama3.2", False)
 
-        # Should be STRING type with empty default
-        assert model_input[0] == "STRING"
-        assert model_input[1]["default"] == ""
+        # Should return dict with ui and result
+        assert isinstance(result, dict)
+        assert "ui" in result
+        assert "result" in result
 
-    def test_run(self, populated_cache):
-        """Test running the select node."""
-        node = OllamaSelectModel()
-        result = node.run("llama3.2")
-
-        assert result == ("llama3.2", None)
+        result_tuple = result["result"]
+        assert result_tuple[0] == client
+        assert result_tuple[1] == "llama3.2"
 
 
-class TestOllamaLoadSelectedModel:
-    """Tests for OllamaLoadSelectedModel node."""
+class TestOllamaLoadModel:
+    """Tests for OllamaLoadModel node."""
 
-    def test_input_types(self, populated_cache):
+    def test_input_types(self):
         """Test INPUT_TYPES returns correct structure."""
-        input_types = OllamaLoadSelectedModel.INPUT_TYPES()
+        input_types = OllamaLoadModel.INPUT_TYPES()
 
         assert "required" in input_types
-        assert "endpoint" in input_types["required"]
+        assert "client" in input_types["required"]
         assert "model" in input_types["required"]
         assert "keep_alive" in input_types["required"]
 
     @patch("comfyui_ollama_model_manager.nodes.run_async")
-    def test_run_success(self, mock_run_async, mock_endpoint, populated_cache):
+    def test_load_model_success(self, mock_run_async, mock_endpoint):
         """Test loading a model successfully."""
         mock_run_async.return_value = {"status": "success"}
 
-        node = OllamaLoadSelectedModel()
-        result = node.run(mock_endpoint, "llama3.2", "-1")
+        client = {"endpoint": mock_endpoint, "type": "ollama_client"}
+        node = OllamaLoadModel()
+        result = node.load_model_op(client, "llama3.2", "-1")
 
         assert isinstance(result, tuple)
-        assert len(result) == 2
+        assert len(result) == 3
+        assert result[0] == client
 
-        result_json = json.loads(result[0])
+        result_json = json.loads(result[1])
         assert result_json == {"status": "success"}
-        assert result[1] is None
+        assert result[2] is None
 
 
-class TestOllamaUnloadSelectedModel:
-    """Tests for OllamaUnloadSelectedModel node."""
+class TestOllamaUnloadModel:
+    """Tests for OllamaUnloadModel node."""
 
-    def test_input_types(self, populated_cache):
+    def test_input_types(self):
         """Test INPUT_TYPES returns correct structure."""
-        input_types = OllamaUnloadSelectedModel.INPUT_TYPES()
+        input_types = OllamaUnloadModel.INPUT_TYPES()
 
         assert "required" in input_types
-        assert "endpoint" in input_types["required"]
+        assert "client" in input_types["required"]
         assert "model" in input_types["required"]
         # Should NOT have keep_alive
         assert "keep_alive" not in input_types["required"]
 
     @patch("comfyui_ollama_model_manager.nodes.run_async")
-    def test_run_success(self, mock_run_async, mock_endpoint, populated_cache):
+    def test_unload_model_success(self, mock_run_async, mock_endpoint):
         """Test unloading a model successfully."""
         mock_run_async.return_value = {"status": "success"}
 
-        node = OllamaUnloadSelectedModel()
-        result = node.run(mock_endpoint, "llama3.2")
+        client = {"endpoint": mock_endpoint, "type": "ollama_client"}
+        node = OllamaUnloadModel()
+        result = node.unload_model_op(client, "llama3.2")
 
         assert isinstance(result, tuple)
-        assert len(result) == 2
+        assert len(result) == 3
+        assert result[0] == client
 
-        result_json = json.loads(result[0])
+        result_json = json.loads(result[1])
         assert result_json == {"status": "success"}
-        assert result[1] is None
+        assert result[2] is None
 
 
 def test_node_registration():
@@ -195,14 +183,23 @@ def test_node_registration():
     )
 
     expected_nodes = [
-        "OllamaRefreshModelList",
-        "OllamaSelectModel",
-        "OllamaLoadSelectedModel",
-        "OllamaUnloadSelectedModel",
+        "OllamaClient",
+        "OllamaModelSelector",
+        "OllamaLoadModel",
+        "OllamaUnloadModel",
     ]
 
+    # Verify we have exactly 4 nodes
+    assert (
+        len(NODE_CLASS_MAPPINGS) == 4
+    ), f"Expected 4 nodes, got {len(NODE_CLASS_MAPPINGS)}"
+
     for node_name in expected_nodes:
-        assert node_name in NODE_CLASS_MAPPINGS
-        assert node_name in NODE_DISPLAY_NAME_MAPPINGS
+        assert (
+            node_name in NODE_CLASS_MAPPINGS
+        ), f"{node_name} not in NODE_CLASS_MAPPINGS"
+        assert (
+            node_name in NODE_DISPLAY_NAME_MAPPINGS
+        ), f"{node_name} not in NODE_DISPLAY_NAME_MAPPINGS"
         assert NODE_CLASS_MAPPINGS[node_name] is not None
         assert isinstance(NODE_DISPLAY_NAME_MAPPINGS[node_name], str)
