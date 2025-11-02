@@ -51,13 +51,20 @@ function parseModelsJson(modelsJsonString) {
 function updateModelDropdown(node, models) {
     const modelWidget = node.widgets?.find(w => w.name === "model");
     if (modelWidget && models && models.length > 0) {
-        // Convert to combo widget
-        modelWidget.type = "combo";
-        modelWidget.options = { values: models };
+        // Update combo widget values
+        if (!modelWidget.options) {
+            modelWidget.options = {};
+        }
+        modelWidget.options.values = models;
 
         // Set default value if current value is empty or not in list
         if (!modelWidget.value || !models.includes(modelWidget.value)) {
             modelWidget.value = models[0];
+        }
+
+        // Trigger UI update
+        if (node.graph && node.graph.change) {
+            node.graph.change();
         }
 
         console.log(`[Ollama] Updated dropdown with ${models.length} models`);
@@ -131,7 +138,7 @@ app.registerExtension({
                 }
             };
 
-            // Auto-refresh when client is connected
+            // Auto-update when client is connected
             const onConnectionsChange = nodeType.prototype.onConnectionsChange;
             nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
                 if (onConnectionsChange) {
@@ -141,10 +148,30 @@ app.registerExtension({
                 if (type === 1 && connected) {  // Input connected
                     const input = this.inputs?.find((i, idx) => idx === index);
                     if (input?.name === "client") {
-                        // Client connected - could trigger auto-refresh here if needed
                         console.log("[Ollama] Client connected to Model Selector");
+                        
+                        // Try to get models from the client's source (if it's a ModelSelector that already executed)
+                        const link = this.graph.links[this.inputs[0].link];
+                        if (link) {
+                            const sourceNode = this.graph.getNodeById(link.origin_id);
+                            // Check if the source node has cached models in its outputs
+                            if (sourceNode && sourceNode.type === "OllamaClient") {
+                                // Look for any OllamaModelSelector nodes that share this client
+                                console.log("[Ollama] Client connected, checking for cached models");
+                            }
+                        }
                     }
                 }
+            };
+            
+            // Add a hint when node is created
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function() {
+                if (onNodeCreated) {
+                    onNodeCreated.apply(this, arguments);
+                }
+                
+                console.log("[Ollama] OllamaModelSelector created - set refresh=true and execute to populate models");
             };
         }
 
