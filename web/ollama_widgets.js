@@ -6,12 +6,11 @@
  * - Legacy: OllamaRefreshModelList → OllamaSelectModel → Load/Unload
  */
 
-console.log("🚀 [Ollama] ollama_widgets.js is loading...");
-
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 
-console.log("✅ [Ollama] Imports successful, app:", app);
+// Log that the module is loading
+console.log("🚀 [Ollama] ollama_widgets.js loaded, app:", app);
 
 // Add custom styling for the display widget
 const style = document.createElement("style");
@@ -153,7 +152,7 @@ app.registerExtension({
                 console.log("[Ollama] ⚡ OllamaModelSelector onExecuted called");
                 console.log("[Ollama] Message keys:", message ? Object.keys(message) : "null");
                 console.log("[Ollama] Full message:", JSON.stringify(message, null, 2));
-                
+
                 if (onExecuted) {
                     onExecuted.apply(this, arguments);
                 }
@@ -277,7 +276,8 @@ app.registerExtension({
                     console.log("[Ollama] Client input connected via onConnectInput - triggering fetch");
 
                     // Small delay to ensure connection is fully established
-                    setTimeout(async () => {
+                    const self = this;
+                    setTimeout(async function() {
                         const endpointWidget = outputNode.widgets?.find(w => w.name === "endpoint");
                         const endpoint = endpointWidget?.value || "http://localhost:11434";
 
@@ -292,13 +292,13 @@ app.registerExtension({
                                 console.log("[Ollama] ✓ Fetched", models.length, "models");
 
                                 if (models.length > 0) {
-                                    updateModelDropdown(this, models);
+                                    updateModelDropdown(self, models);
                                 }
                             }
                         } catch (error) {
                             console.error("[Ollama] Error:", error);
                         }
-                    }.bind(this), 100);
+                    }, 100);
                 }
 
                 return result;
