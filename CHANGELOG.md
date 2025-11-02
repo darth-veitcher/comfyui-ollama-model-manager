@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Auto-fetch models on connection**: OllamaModelSelector now automatically fetches models when a client is connected
+- Direct Ollama API calls from JavaScript for instant model list updates without needing to execute the workflow
+
 ### Fixed
 
 - OllamaModelSelector now displays as a dropdown from the start (changed from STRING to COMBO input)
@@ -16,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - OllamaModelSelector's `model` input now uses cached models for initial dropdown population
 - JavaScript widget handlers updated to work with native COMBO widgets instead of converting from STRING
 - Added graph change trigger to force UI updates when dropdown values change
+- `onConnectionsChange` now makes direct API call to `{endpoint}/api/tags` to fetch models instantly
+- Downstream Load/Unload nodes are automatically updated when models are fetched
 
 ### Technical Details
 

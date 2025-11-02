@@ -138,9 +138,9 @@ app.registerExtension({
                 }
             };
 
-            // Auto-update when client is connected
+            // Auto-refresh when client is connected
             const onConnectionsChange = nodeType.prototype.onConnectionsChange;
-            nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
+            nodeType.prototype.onConnectionsChange = async function(type, index, connected, link_info) {
                 if (onConnectionsChange) {
                     onConnectionsChange.apply(this, arguments);
                 }
@@ -148,30 +148,65 @@ app.registerExtension({
                 if (type === 1 && connected) {  // Input connected
                     const input = this.inputs?.find((i, idx) => idx === index);
                     if (input?.name === "client") {
-                        console.log("[Ollama] Client connected to Model Selector");
-                        
-                        // Try to get models from the client's source (if it's a ModelSelector that already executed)
+                        console.log("[Ollama] Client connected to Model Selector - fetching models");
+
+                        // Get the client endpoint from the connected node
                         const link = this.graph.links[this.inputs[0].link];
                         if (link) {
-                            const sourceNode = this.graph.getNodeById(link.origin_id);
-                            // Check if the source node has cached models in its outputs
-                            if (sourceNode && sourceNode.type === "OllamaClient") {
-                                // Look for any OllamaModelSelector nodes that share this client
-                                console.log("[Ollama] Client connected, checking for cached models");
+                            const clientNode = this.graph.getNodeById(link.origin_id);
+                            if (clientNode && clientNode.type === "OllamaClient") {
+                                const endpointWidget = clientNode.widgets?.find(w => w.name === "endpoint");
+                                const endpoint = endpointWidget?.value || "http://localhost:11434";
+
+                                console.log("[Ollama] Fetching models from:", endpoint);
+
+                                try {
+                                    // Make direct API call to Ollama
+                                    const response = await fetch(`${endpoint}/api/tags`);
+                                    if (response.ok) {
+                                        const data = await response.json();
+                                        const models = data.models?.map(m => m.name) || [];
+
+                                        console.log("[Ollama] Fetched", models.length, "models:", models);
+
+                                        if (models.length > 0) {
+                                            updateModelDropdown(this, models);
+
+                                            // Also update downstream Load/Unload nodes
+                                            const clientOutput = this.outputs?.[0];
+                                            if (clientOutput?.links && clientOutput.links.length > 0) {
+                                                for (const linkId of clientOutput.links) {
+                                                    const link = this.graph.links[linkId];
+                                                    if (link) {
+                                                        const targetNode = this.graph.getNodeById(link.target_id);
+                                                        if (targetNode) {
+                                                            console.log("[Ollama] Auto-updating downstream node:", targetNode.type);
+                                                            updateModelDropdown(targetNode, models);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        console.warn("[Ollama] Failed to fetch models:", response.status, response.statusText);
+                                    }
+                                } catch (error) {
+                                    console.error("[Ollama] Error fetching models:", error);
+                                }
                             }
                         }
                     }
                 }
             };
-            
+
             // Add a hint when node is created
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function() {
                 if (onNodeCreated) {
                     onNodeCreated.apply(this, arguments);
                 }
-                
-                console.log("[Ollama] OllamaModelSelector created - set refresh=true and execute to populate models");
+
+                console.log("[Ollama] OllamaModelSelector created - connect a client to auto-fetch models");
             };
         }
 

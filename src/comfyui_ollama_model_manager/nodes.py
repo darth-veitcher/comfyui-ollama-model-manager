@@ -64,7 +64,7 @@ class OllamaModelSelector:
         # Get cached models if available
         cached_models = get_models(None)
         model_list = cached_models if cached_models else [""]
-        
+
         return {
             "required": {
                 "client": ("OLLAMA_CLIENT",),
