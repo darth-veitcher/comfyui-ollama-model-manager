@@ -33,15 +33,18 @@ class OllamaRefreshModelList:
             "optional": {
                 "dependencies": ("*",),
             },
+            "hidden": {
+                "unique_id": "UNIQUE_ID",
+            },
         }
 
-    RETURN_TYPES = ("STRING", "*")
-    RETURN_NAMES = ("models_json", "dependencies")
+    RETURN_TYPES = ("STRING", "STRING", "*")
+    RETURN_NAMES = ("models_json", "models_display", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
     OUTPUT_NODE = True
 
-    def run(self, endpoint: str, dependencies=None):
+    def run(self, endpoint: str, dependencies=None, unique_id=None):
         """Refresh the list of available models from Ollama."""
         # Set correlation ID for this operation
         request_id = str(uuid.uuid4())[:8]
@@ -64,21 +67,21 @@ class OllamaRefreshModelList:
                 "=" * 50,
                 f"🤖 Available Ollama Models ({len(names)})",
                 "=" * 50,
-                ""
+                "",
             ]
-            
+
             for i, model in enumerate(names, 1):
                 display_lines.append(f"{i:3d}. {model}")
-            
+
             display_lines.extend(["", "=" * 50])
             display_text = "\n".join(display_lines)
 
             log.info(f"✅ Model list refreshed: {len(names)} models available")
-            
-            # Return with UI display
+
+            # Return display text as a separate STRING output that shows in UI
             return {
-                "ui": {"text": [display_text]},
-                "result": (result, dependencies)
+                "ui": {"text": (display_text,)},
+                "result": (result, display_text, dependencies),
             }
 
         except Exception as e:

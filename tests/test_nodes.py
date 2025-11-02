@@ -24,8 +24,12 @@ class TestOllamaRefreshModelList:
 
     def test_class_attributes(self):
         """Test node class attributes."""
-        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "*")
-        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json", "dependencies")
+        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "STRING", "*")
+        assert OllamaRefreshModelList.RETURN_NAMES == (
+            "models_json",
+            "models_display",
+            "dependencies",
+        )
         assert OllamaRefreshModelList.FUNCTION == "run"
         assert OllamaRefreshModelList.CATEGORY == "Ollama"
         assert OllamaRefreshModelList.OUTPUT_NODE is True
@@ -42,7 +46,7 @@ class TestOllamaRefreshModelList:
         assert isinstance(result, dict)
         assert "ui" in result
         assert "result" in result
-        
+
         # Check UI display text
         assert "text" in result["ui"]
         display_text = result["ui"]["text"][0]
@@ -52,16 +56,19 @@ class TestOllamaRefreshModelList:
         assert "mistral" in display_text
         assert "=" in display_text  # Has separators
 
-        # Check result tuple
+        # Check result tuple - now has 3 elements
         assert isinstance(result["result"], tuple)
-        assert len(result["result"]) == 2
-        
+        assert len(result["result"]) == 3
+
         # Parse the JSON result
         models_json = json.loads(result["result"][0])
         assert models_json == sample_models
-        
+
+        # models_display should match UI text
+        assert result["result"][1] == display_text
+
         # dependencies should be None when not provided
-        assert result["result"][1] is None
+        assert result["result"][2] is None
 
     @patch("comfyui_ollama_model_manager.nodes.fetch_models_from_ollama")
     @patch("comfyui_ollama_model_manager.nodes.run_async")
@@ -75,12 +82,12 @@ class TestOllamaRefreshModelList:
         # Check result structure
         models_json = json.loads(result["result"][0])
         assert models_json == ["<no-models-returned>"]
-        
+
         # Check display shows the placeholder
         display_text = result["ui"]["text"][0]
         assert "<no-models-returned>" in display_text
-        
-        assert result["result"][1] is None
+
+        assert result["result"][2] is None
 
 
 class TestOllamaSelectModel:
