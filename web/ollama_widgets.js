@@ -50,27 +50,65 @@ function parseModelsJson(modelsJsonString) {
 // Helper function to update model dropdown widget
 function updateModelDropdown(node, models) {
     const modelWidget = node.widgets?.find(w => w.name === "model");
-    if (modelWidget && models && models.length > 0) {
-        // Update combo widget values
-        if (!modelWidget.options) {
-            modelWidget.options = {};
-        }
-        modelWidget.options.values = models;
+    if (!modelWidget) {
+        console.warn("[Ollama] No model widget found on node:", node.type);
+        return false;
+    }
 
-        // Set default value if current value is empty or not in list
-        if (!modelWidget.value || !models.includes(modelWidget.value)) {
-            modelWidget.value = models[0];
-        }
+    if (!models || models.length === 0) {
+        console.warn("[Ollama] No models to update");
+        return false;
+    }
 
-        // Trigger UI update
-        if (node.graph && node.graph.change) {
+    console.log(`[Ollama] Updating model widget on ${node.type}:`, {
+        currentValue: modelWidget.value,
+        currentType: modelWidget.type,
+        hasOptions: !!modelWidget.options,
+        modelsCount: models.length,
+        models: models
+    });
+
+    // Ensure widget is a combo type
+    modelWidget.type = "combo";
+
+    // Update combo widget values
+    if (!modelWidget.options) {
+        modelWidget.options = {};
+    }
+    modelWidget.options.values = models;
+
+    // Set default value if current value is empty or not in list
+    if (!modelWidget.value || !models.includes(modelWidget.value)) {
+        modelWidget.value = models[0];
+        console.log(`[Ollama] Set default model to: ${models[0]}`);
+    }
+
+    // Force widget to recompute size
+    if (modelWidget.computeSize) {
+        modelWidget.computeSize();
+    }
+
+    // Trigger multiple UI updates to ensure visibility
+    if (node.setDirtyCanvas) {
+        node.setDirtyCanvas(true, true);
+    }
+
+    if (node.graph) {
+        if (node.graph.change) {
             node.graph.change();
         }
-
-        console.log(`[Ollama] Updated dropdown with ${models.length} models`);
-        return true;
+        if (node.graph.setDirtyCanvas) {
+            node.graph.setDirtyCanvas(true, true);
+        }
     }
-    return false;
+
+    // Force a node size recalculation
+    if (node.onResize) {
+        node.onResize();
+    }
+
+    console.log(`[Ollama] ✓ Updated dropdown with ${models.length} models`);
+    return true;
 }
 
 // Helper to get models from connected source node

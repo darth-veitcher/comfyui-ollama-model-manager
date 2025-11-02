@@ -15,6 +15,9 @@ All notable changes to this project will be documented in this file.
 - Model dropdown properly refreshes when the node is executed
 - Added UI change trigger to ensure dropdown updates are visible immediately
 - Improved console logging for debugging dropdown updates
+- Fixed tiny dropdown issue - now shows proper placeholder text `<connect client to fetch>`
+- Enhanced widget refresh with forced canvas redraw and size recalculation
+- Added explicit widget type enforcement to ensure COMBO display
 
 ### Modified
 

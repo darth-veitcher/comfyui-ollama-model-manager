@@ -63,7 +63,8 @@ class OllamaModelSelector:
     def INPUT_TYPES(cls):
         # Get cached models if available
         cached_models = get_models(None)
-        model_list = cached_models if cached_models else [""]
+        # Provide a placeholder that won't make dropdown tiny
+        model_list = cached_models if cached_models else ["<connect client to fetch>"]
 
         return {
             "required": {
