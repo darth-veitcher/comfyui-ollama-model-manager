@@ -6,8 +6,12 @@
  * - Legacy: OllamaRefreshModelList → OllamaSelectModel → Load/Unload
  */
 
+console.log("🚀 [Ollama] ollama_widgets.js is loading...");
+
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
+
+console.log("✅ [Ollama] Imports successful, app:", app);
 
 // Add custom styling for the display widget
 const style = document.createElement("style");

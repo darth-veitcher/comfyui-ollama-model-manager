@@ -85,6 +85,19 @@ class OllamaModelSelector:
     CATEGORY = "Ollama"
     OUTPUT_NODE = True
 
+    @classmethod
+    def IS_CHANGED(cls, client, model, refresh=False, **kwargs):
+        """Force re-evaluation when refresh is true or when cached models change."""
+        # Return a unique value to force update
+        if refresh:
+            return float("nan")  # Always re-run when refresh is true
+        # Also check if cache has been updated
+        endpoint = client.get("endpoint", "") if isinstance(client, dict) else ""
+        cached = get_models(endpoint)
+        if cached:
+            return str(cached)  # Return hash of cached models
+        return model
+
     def select_model(
         self, client: dict, model: str, refresh: bool = False, unique_id=None
     ):
