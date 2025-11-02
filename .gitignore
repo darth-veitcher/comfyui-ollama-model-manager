@@ -21,3 +21,4 @@ htmlcov/
 
 # Package specific
 logs/*.json
+logs/

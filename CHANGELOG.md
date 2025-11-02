@@ -2,52 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.0.0] - 2025-11-02
 
-### Added
+### Architecture
 
-- **Auto-fetch models on connection**: OllamaModelSelector now automatically fetches models when a client is connected
-- Direct Ollama API calls from JavaScript for instant model list updates without needing to execute the workflow
+- Refactored to clean 4-node architecture:
+  - `OllamaClient` - Reusable connection configuration
+  - `OllamaModelSelector` - Model selection with optional auto-refresh
+  - `OllamaLoadModel` - Load models into memory
+  - `OllamaUnloadModel` - Unload models to free memory
 
-### Fixed
+### Features
 
-- OllamaModelSelector now displays as a dropdown from the start (changed from STRING to COMBO input)
-- Model dropdown properly refreshes when the node is executed
-- Added UI change trigger to ensure dropdown updates are visible immediately
-- Improved console logging for debugging dropdown updates
-- Fixed tiny dropdown issue - now shows proper placeholder text `<connect client to fetch>`
-- Enhanced widget refresh with forced canvas redraw and size recalculation
-- Added explicit widget type enforcement to ensure COMBO display
-
-### Modified
-
-- OllamaModelSelector's `model` input now uses cached models for initial dropdown population
-- JavaScript widget handlers updated to work with native COMBO widgets instead of converting from STRING
-- Added graph change trigger to force UI updates when dropdown values change
-- `onConnectionsChange` now makes direct API call to `{endpoint}/api/tags` to fetch models instantly
-- Downstream Load/Unload nodes are automatically updated when models are fetched
-
-### Technical Details
-
-The key change is in `nodes.py` - `OllamaModelSelector.INPUT_TYPES()`:
-
-- **Before**: `"model": ("STRING", {"default": "", "multiline": False})`
-- **After**: `"model": (model_list,)` where `model_list` is cached models or `[""]`
-
-This means the model selector now:
-
-1. Shows as a dropdown immediately (no need to execute first)
-2. Populates with cached models if available
-3. Updates when executed with `refresh=true`
-4. Propagates model list to downstream Load/Unload nodes
-
-## [Previous] - 2024-12-XX
+- COMBO dropdown for model selection with cached models
+- Per-endpoint model caching for better performance
+- Dynamic dropdown updates after workflow execution
+- Python backend handles all Ollama API calls (no CORS issues)
+- Type-safe `OLLAMA_CLIENT` connection passing between nodes
+- Beautiful logging with loguru (console + JSON file output)
 
 ### Changed
 
-- Refactored to 4-node architecture: OllamaClient, OllamaModelSelector, OllamaLoadModel, OllamaUnloadModel
-- Removed legacy nodes (OllamaRefreshModelList, OllamaSelectModel)
-- Implemented per-endpoint model caching
+- Model input changed from STRING to COMBO for better UX
+- Removed all JavaScript fetch calls to avoid CORS restrictions
+- Models fetched only via Python backend during workflow execution
+- Simplified JavaScript to only update dropdowns from execution results
 - Added models_json output to OllamaModelSelector for downstream node population
 
 ### Added

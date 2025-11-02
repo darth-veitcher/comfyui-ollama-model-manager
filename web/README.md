@@ -1,50 +1,32 @@
 # Custom Web Extensions for Ollama Model Manager
 
-This directory contains JavaScript extensions that add custom UI widgets to the ComfyUI nodes.
+This directory contains JavaScript extensions that enhance the ComfyUI nodes with dynamic dropdowns.
 
 ## Files
 
 ### `ollama_widgets.js`
-Custom widget implementation for displaying model lists directly on the `OllamaRefreshModelList` node.
+Implements dynamic model dropdown updates for Ollama nodes.
 
 ## How It Works
 
-When the `OllamaRefreshModelList` node executes:
-
-1. **Python Side**: The node returns UI data in the format:
-   ```python
-   {
-       "ui": {
-           "models_display": ["formatted text"],
-           "model_count": [count],
-           "model_list": [list]
-       },
-       "result": (models_json, dependencies)
-   }
-   ```
-
-2. **JavaScript Side**: The extension intercepts the `onExecuted` callback and:
-   - Creates a custom multiline text widget
-   - Styles it with a dark theme and monospace font
-   - Displays the formatted model list directly on the node
-   - Auto-sizes the widget for optimal display
+1. **User connects nodes**: `OllamaClient` → `OllamaModelSelector` → `OllamaLoadModel`
+2. **User executes workflow**: With `refresh=true` on `OllamaModelSelector`
+3. **Python backend**: Fetches models from Ollama API (no CORS issues)
+4. **JavaScript updates**: Parses execution results and updates all model dropdowns
 
 ## Features
 
-- ✅ **No extra nodes needed** - Models display directly on the refresh node
-- ✅ **Custom styling** - Dark theme with syntax highlighting
-- ✅ **Read-only display** - Prevents accidental edits
-- ✅ **Auto-sizing** - Widget adjusts to content
-- ✅ **Persistent** - Display remains after workflow reload
+- ✅ **Dynamic dropdowns** - Model lists update automatically after execution
+- ✅ **No CORS issues** - All API calls through Python backend
+- ✅ **Downstream propagation** - Load/Unload nodes get updated automatically
+- ✅ **Custom styling** - Clean, readable dropdown display
+- ✅ **Cached models** - Persists between workflow executions
 
-## Styling
+## Architecture
 
-The widget uses custom CSS with:
-- Dark background (#1e1e1e)
-- Monospace font (Consolas, Monaco, Courier New)
-- Scrollable overflow for long lists
-- Model count highlighted in teal
+The JavaScript hooks into ComfyUI's execution lifecycle:
+- `onExecuted`: Updates dropdowns when `OllamaModelSelector` executes
+- `onConnectionsChange`: Logs connection events for debugging
+- `updateModelDropdown`: Helper function to refresh COMBO widgets
 
-## ComfyUI Integration
-
-ComfyUI automatically loads JavaScript files from the `web` directory of custom nodes when the `WEB_DIRECTORY` variable is set in `__init__.py`.
+All model fetching happens in Python to avoid browser CORS restrictions.
