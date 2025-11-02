@@ -62,6 +62,11 @@ from comfyui_ollama_model_manager.nodes import (  # noqa: E402
     OllamaUnloadModel,
 )
 
+# Register API routes for CORS-free model fetching
+from comfyui_ollama_model_manager.api import setup_api_routes  # noqa: E402
+
+setup_api_routes()
+
 # Register nodes with ComfyUI
 NODE_CLASS_MAPPINGS = {
     "OllamaClient": OllamaClient,

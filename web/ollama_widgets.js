@@ -1,9 +1,13 @@
 /**
  * Custom widgets for Ollama Model Manager nodes in ComfyUI
  *
- * Supports both new and legacy node architectures:
- * - New: OllamaClient → OllamaModelSelector → Load/Unload
- * - Legacy: OllamaRefreshModelList → OllamaSelectModel → Load/Unload
+ * Architecture:
+ * - OllamaClient → OllamaModelSelector → Load/Unload
+ *
+ * Features:
+ * - Auto-fetches models via ComfyUI API (no CORS issues!)
+ * - Dynamic dropdown updates on connection
+ * - Propagates model list to downstream nodes
  */
 
 import { app } from "../../scripts/app.js";
@@ -191,39 +195,70 @@ app.registerExtension({
                 }
             };
 
-            // Log when client is connected
+            // Helper function to fetch models via ComfyUI API (no CORS!)
+            async function fetchModelsFromAPI(endpoint) {
+                try {
+                    console.log(`[Ollama] 🌐 Fetching models from API: ${endpoint}`);
+                    const response = await fetch(`/ollama/models?endpoint=${encodeURIComponent(endpoint)}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.models) {
+                        console.log(`[Ollama] ✅ Fetched ${data.count} models via API`);
+                        return data.models;
+                    } else {
+                        console.error("[Ollama] ❌ API returned error:", data.error);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error("[Ollama] ❌ Failed to fetch models via API:", error);
+                    return null;
+                }
+            }
+
+            // Auto-fetch when client is connected via onConnectionsChange
             const onConnectionsChange = nodeType.prototype.onConnectionsChange;
-            nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
+            nodeType.prototype.onConnectionsChange = async function(type, index, connected, link_info) {
                 console.log("[Ollama] onConnectionsChange fired:", {type, index, connected, link_info});
 
                 if (onConnectionsChange) {
                     onConnectionsChange.apply(this, arguments);
                 }
 
-                if (type === 1 && connected) {  // Input connected
-                    const input = this.inputs?.find((i, idx) => idx === index);
-                    if (input?.name === "client") {
-                        console.log("[Ollama] ✓ Client connected - set refresh=true and execute to fetch models");
+                if (type === 1 && connected && index === 0) {  // Input connected at index 0 (client)
+                    // Get the source node (OllamaClient)
+                    const link = this.graph.links[link_info.link_id];
+                    if (link) {
+                        const sourceNode = this.graph.getNodeById(link.origin_id);
+                        if (sourceNode?.type === "OllamaClient") {
+                            console.log("[Ollama] ✓ Client connected - fetching models automatically");
+                            
+                            const endpointWidget = sourceNode.widgets?.find(w => w.name === "endpoint");
+                            if (endpointWidget?.value) {
+                                const endpoint = endpointWidget.value;
+                                const models = await fetchModelsFromAPI(endpoint);
+                                
+                                if (models && models.length > 0) {
+                                    updateModelDropdown(this, models);
+                                    
+                                    // Update downstream nodes
+                                    const clientOutput = this.outputs?.[0];
+                                    if (clientOutput?.links) {
+                                        for (const linkId of clientOutput.links) {
+                                            const downstreamLink = this.graph.links[linkId];
+                                            if (downstreamLink) {
+                                                const targetNode = this.graph.getNodeById(downstreamLink.target_id);
+                                                if (targetNode) {
+                                                    updateModelDropdown(targetNode, models);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             };
-
-            // Hook into onConnectInput for logging
-            const onConnectInput = nodeType.prototype.onConnectInput;
-            nodeType.prototype.onConnectInput = function(inputIndex, outputType, outputSlot, outputNode, outputIndex) {
-                console.log("[Ollama] onConnectInput called:", {inputIndex, outputType, outputNode: outputNode?.type});
-
-                const result = onConnectInput ? onConnectInput.apply(this, arguments) : true;
-
-                if (inputIndex === 0 && outputNode?.type === "OllamaClient") {
-                    console.log("[Ollama] ✓ Client input connected - set refresh=true and execute workflow to fetch models");
-                }
-
-                return result;
-            };
-
-            // Note: We don't fetch models from JavaScript due to CORS issues.
-            // Models must be fetched by executing the workflow with refresh=true.
 
             // Add a hint when node is created
             const onNodeCreated = nodeType.prototype.onNodeCreated;
