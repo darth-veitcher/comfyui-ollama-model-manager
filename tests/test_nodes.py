@@ -47,14 +47,14 @@ class TestOllamaRefreshModelList:
         assert "models_display" in result["ui"]
         assert "model_count" in result["ui"]
         assert "model_list" in result["ui"]
-        
+
         display_text = result["ui"]["models_display"][0]
         assert isinstance(display_text, str)
         assert "Available Ollama Models" in display_text
         assert "llama3.2" in display_text
         assert "mistral" in display_text
         assert "=" in display_text  # Has separators
-        
+
         assert result["ui"]["model_count"][0] == len(sample_models)
         assert result["ui"]["model_list"][0] == sample_models
 
@@ -85,7 +85,7 @@ class TestOllamaRefreshModelList:
         # Check display shows the placeholder
         display_text = result["ui"]["models_display"][0]
         assert "<no-models-returned>" in display_text
-        
+
         assert result["ui"]["model_count"][0] == 1
         assert result["ui"]["model_list"][0] == ["<no-models-returned>"]
 
