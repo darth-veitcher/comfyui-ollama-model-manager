@@ -35,13 +35,13 @@ class OllamaRefreshModelList:
             },
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "*")
-    RETURN_NAMES = ("models_json", "display", "dependencies")
+    RETURN_TYPES = ("STRING", "*")
+    RETURN_NAMES = ("models_json", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
     OUTPUT_NODE = True
 
-    def run(self, endpoint: str, dependencies=None) -> Tuple[str, str, Any]:
+    def run(self, endpoint: str, dependencies=None):
         """Refresh the list of available models from Ollama."""
         # Set correlation ID for this operation
         request_id = str(uuid.uuid4())[:8]
@@ -59,7 +59,7 @@ class OllamaRefreshModelList:
             set_models(endpoint, names)
             result = json.dumps(names, indent=2)
 
-            # Create a pretty formatted display
+            # Create a pretty formatted display for the UI
             display_lines = [
                 "=" * 50,
                 f"🤖 Available Ollama Models ({len(names)})",
@@ -74,7 +74,12 @@ class OllamaRefreshModelList:
             display_text = "\n".join(display_lines)
 
             log.info(f"✅ Model list refreshed: {len(names)} models available")
-            return (result, display_text, dependencies)
+            
+            # Return with UI display
+            return {
+                "ui": {"text": [display_text]},
+                "result": (result, dependencies)
+            }
 
         except Exception as e:
             log.exception(f"💥 Failed to refresh model list: {e}")

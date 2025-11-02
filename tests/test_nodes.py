@@ -24,8 +24,8 @@ class TestOllamaRefreshModelList:
 
     def test_class_attributes(self):
         """Test node class attributes."""
-        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "STRING", "*")
-        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json", "display", "dependencies")
+        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "*")
+        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json", "dependencies")
         assert OllamaRefreshModelList.FUNCTION == "run"
         assert OllamaRefreshModelList.CATEGORY == "Ollama"
         assert OllamaRefreshModelList.OUTPUT_NODE is True
@@ -38,23 +38,30 @@ class TestOllamaRefreshModelList:
         node = OllamaRefreshModelList()
         result = node.run(mock_endpoint)
 
-        assert isinstance(result, tuple)
-        assert len(result) == 3
-
-        # Parse the JSON result
-        models_json = json.loads(result[0])
-        assert models_json == sample_models
+        # Result should be a dict with "ui" and "result" keys
+        assert isinstance(result, dict)
+        assert "ui" in result
+        assert "result" in result
         
-        # Check display text is formatted nicely
-        display_text = result[1]
+        # Check UI display text
+        assert "text" in result["ui"]
+        display_text = result["ui"]["text"][0]
         assert isinstance(display_text, str)
         assert "Available Ollama Models" in display_text
         assert "llama3.2" in display_text
         assert "mistral" in display_text
         assert "=" in display_text  # Has separators
+
+        # Check result tuple
+        assert isinstance(result["result"], tuple)
+        assert len(result["result"]) == 2
+        
+        # Parse the JSON result
+        models_json = json.loads(result["result"][0])
+        assert models_json == sample_models
         
         # dependencies should be None when not provided
-        assert result[2] is None
+        assert result["result"][1] is None
 
     @patch("comfyui_ollama_model_manager.nodes.fetch_models_from_ollama")
     @patch("comfyui_ollama_model_manager.nodes.run_async")
@@ -65,14 +72,15 @@ class TestOllamaRefreshModelList:
         node = OllamaRefreshModelList()
         result = node.run(mock_endpoint)
 
-        models_json = json.loads(result[0])
+        # Check result structure
+        models_json = json.loads(result["result"][0])
         assert models_json == ["<no-models-returned>"]
         
         # Check display shows the placeholder
-        display_text = result[1]
+        display_text = result["ui"]["text"][0]
         assert "<no-models-returned>" in display_text
         
-        assert result[2] is None
+        assert result["result"][1] is None
 
 
 class TestOllamaSelectModel:
