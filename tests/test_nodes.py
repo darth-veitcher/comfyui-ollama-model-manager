@@ -24,8 +24,8 @@ class TestOllamaRefreshModelList:
 
     def test_class_attributes(self):
         """Test node class attributes."""
-        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING",)
-        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json",)
+        assert OllamaRefreshModelList.RETURN_TYPES == ("STRING", "*")
+        assert OllamaRefreshModelList.RETURN_NAMES == ("models_json", "dependencies")
         assert OllamaRefreshModelList.FUNCTION == "run"
         assert OllamaRefreshModelList.CATEGORY == "Ollama"
 
@@ -38,11 +38,13 @@ class TestOllamaRefreshModelList:
         result = node.run(mock_endpoint)
 
         assert isinstance(result, tuple)
-        assert len(result) == 1
+        assert len(result) == 2
 
         # Parse the JSON result
         models_json = json.loads(result[0])
         assert models_json == sample_models
+        # dependencies should be None when not provided
+        assert result[1] is None
 
     @patch("comfyui_ollama_model_manager.nodes.fetch_models_from_ollama")
     @patch("comfyui_ollama_model_manager.nodes.run_async")
@@ -55,6 +57,7 @@ class TestOllamaRefreshModelList:
 
         models_json = json.loads(result[0])
         assert models_json == ["<no-models-returned>"]
+        assert result[1] is None
 
 
 class TestOllamaSelectModel:
@@ -92,7 +95,7 @@ class TestOllamaSelectModel:
         node = OllamaSelectModel()
         result = node.run("llama3.2")
 
-        assert result == ("llama3.2",)
+        assert result == ("llama3.2", None)
 
 
 class TestOllamaLoadSelectedModel:
@@ -116,10 +119,11 @@ class TestOllamaLoadSelectedModel:
         result = node.run(mock_endpoint, "llama3.2", "-1")
 
         assert isinstance(result, tuple)
-        assert len(result) == 1
+        assert len(result) == 2
 
         result_json = json.loads(result[0])
         assert result_json == {"status": "success"}
+        assert result[1] is None
 
 
 class TestOllamaUnloadSelectedModel:
@@ -144,10 +148,11 @@ class TestOllamaUnloadSelectedModel:
         result = node.run(mock_endpoint, "llama3.2")
 
         assert isinstance(result, tuple)
-        assert len(result) == 1
+        assert len(result) == 2
 
         result_json = json.loads(result[0])
         assert result_json == {"status": "success"}
+        assert result[1] is None
 
 
 def test_node_registration():

@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from .async_utils import run_async
 from .log_config import get_logger, set_request_id
@@ -29,15 +29,18 @@ class OllamaRefreshModelList:
                         "multiline": False,
                     },
                 ),
-            }
+            },
+            "optional": {
+                "dependencies": ("*",),
+            },
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("models_json",)
+    RETURN_TYPES = ("STRING", "*")
+    RETURN_NAMES = ("models_json", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
 
-    def run(self, endpoint: str) -> Tuple[str]:
+    def run(self, endpoint: str, dependencies=None) -> Tuple[str, Any]:
         """Refresh the list of available models from Ollama."""
         # Set correlation ID for this operation
         request_id = str(uuid.uuid4())[:8]
@@ -56,7 +59,7 @@ class OllamaRefreshModelList:
             result = json.dumps(names, indent=2)
 
             log.info(f"✅ Model list refreshed: {len(names)} models available")
-            return (result,)
+            return (result, dependencies)
 
         except Exception as e:
             log.exception(f"💥 Failed to refresh model list: {e}")
@@ -90,21 +93,22 @@ class OllamaSelectModel:
             },
             "optional": {
                 "models_json": ("STRING", {"forceInput": True}),
+                "dependencies": ("*",),
             },
         }
 
     @classmethod
-    def IS_CHANGED(cls, model, models_json=None):
+    def IS_CHANGED(cls, model, models_json=None, dependencies=None):
         """Force UI to re-query INPUT_TYPES when models cache changes."""
         models = get_models()
         return str(hash(tuple(models)))
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("model",)
+    RETURN_TYPES = ("STRING", "*")
+    RETURN_NAMES = ("model", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
 
-    def run(self, model: str, models_json: Optional[str] = None) -> Tuple[str]:
+    def run(self, model: str, models_json: Optional[str] = None, dependencies=None) -> Tuple[str, Any]:
         """Select a model from the cached list or use provided model name."""
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"select-{request_id}")
@@ -126,7 +130,7 @@ class OllamaSelectModel:
         log.info(f"🎯 Selected model: '{model}'")
 
         # Just echo the selection forward
-        return (model,)
+        return (model, dependencies)
 
 
 class OllamaLoadSelectedModel:
@@ -165,11 +169,12 @@ class OllamaLoadSelectedModel:
             },
             "optional": {
                 "models_json": ("STRING", {"forceInput": True}),
+                "dependencies": ("*",),
             },
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("result",)
+    RETURN_TYPES = ("STRING", "*")
+    RETURN_NAMES = ("result", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
 
@@ -179,7 +184,8 @@ class OllamaLoadSelectedModel:
         model: str,
         keep_alive: str,
         models_json: Optional[str] = None,
-    ) -> Tuple[str]:
+        dependencies=None,
+    ) -> Tuple[str, Any]:
         """Load the selected model into Ollama's memory."""
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"load-{request_id}")
@@ -203,7 +209,7 @@ class OllamaLoadSelectedModel:
             result = json.dumps(data, indent=2)
 
             log.info(f"✅ Model '{model}' loaded successfully")
-            return (result,)
+            return (result, dependencies)
 
         except Exception as e:
             log.exception(f"💥 Failed to load model '{model}': {e}")
@@ -238,17 +244,18 @@ class OllamaUnloadSelectedModel:
             },
             "optional": {
                 "models_json": ("STRING", {"forceInput": True}),
+                "dependencies": ("*",),
             },
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("result",)
+    RETURN_TYPES = ("STRING", "*")
+    RETURN_NAMES = ("result", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
 
     def run(
-        self, endpoint: str, model: str, models_json: Optional[str] = None
-    ) -> Tuple[str]:
+        self, endpoint: str, model: str, models_json: Optional[str] = None, dependencies=None
+    ) -> Tuple[str, Any]:
         """Unload the selected model from Ollama's memory."""
         request_id = str(uuid.uuid4())[:8]
         set_request_id(f"unload-{request_id}")
@@ -272,7 +279,7 @@ class OllamaUnloadSelectedModel:
             result = json.dumps(data, indent=2)
 
             log.info(f"✅ Model '{model}' unloaded successfully")
-            return (result,)
+            return (result, dependencies)
 
         except Exception as e:
             log.exception(f"💥 Failed to unload model '{model}': {e}")
