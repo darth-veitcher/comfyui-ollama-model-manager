@@ -146,17 +146,25 @@ app.registerExtension({
             const onExecuted = nodeType.prototype.onExecuted;
 
             nodeType.prototype.onExecuted = function(message) {
+                console.log("[Ollama] ⚡ OllamaModelSelector onExecuted called");
+                console.log("[Ollama] Message keys:", message ? Object.keys(message) : "null");
+                console.log("[Ollama] Full message:", JSON.stringify(message, null, 2));
+                
                 if (onExecuted) {
                     onExecuted.apply(this, arguments);
                 }
 
                 // Update model dropdown when executed
                 if (message?.models_json) {
+                    console.log("[Ollama] ✓ Found models_json in message");
                     const modelsJson = message.models_json[0];
+                    console.log("[Ollama] models_json value:", modelsJson);
                     const models = parseModelsJson(modelsJson);
+                    console.log("[Ollama] Parsed models:", models);
                     if (models) {
-                        console.log("[Ollama] OllamaModelSelector executed with", models.length, "models");
-                        updateModelDropdown(this, models);
+                        console.log("[Ollama] ✓ OllamaModelSelector executed with", models.length, "models");
+                        const updated = updateModelDropdown(this, models);
+                        console.log("[Ollama] Dropdown update result:", updated);
 
                         // Notify downstream nodes connected to client output (index 0)
                         const clientOutput = this.outputs?.[0];
@@ -172,7 +180,11 @@ app.registerExtension({
                                 }
                             }
                         }
+                    } else {
+                        console.warn("[Ollama] ⚠️  Parsed models is null or empty");
                     }
+                } else {
+                    console.warn("[Ollama] ⚠️  No models_json found in message!");
                 }
             };
 
@@ -291,7 +303,7 @@ app.registerExtension({
             // Helper function to check for existing client connection and fetch models
             async function checkAndFetchModels(node) {
                 console.log("[Ollama] Checking for existing client connection...");
-                
+
                 // Check if client input is connected
                 const clientInput = node.inputs?.[0];
                 if (!clientInput || !clientInput.link) {
@@ -321,12 +333,12 @@ app.registerExtension({
                     if (response.ok) {
                         const data = await response.json();
                         const models = data.models?.map(m => m.name) || [];
-                        
+
                         console.log("[Ollama] ✓ Fetched", models.length, "models:", models);
-                        
+
                         if (models.length > 0) {
                             updateModelDropdown(node, models);
-                            
+
                             // Also update downstream nodes
                             const clientOutput = node.outputs?.[0];
                             if (clientOutput?.links && clientOutput.links.length > 0) {
@@ -358,29 +370,29 @@ app.registerExtension({
                 }
 
                 console.log("[Ollama] OllamaModelSelector created - connect a client to auto-fetch models");
-                
+
                 // Check for existing connections after a short delay
                 setTimeout(() => checkAndFetchModels(this), 100);
             };
-            
+
             // Check when workflow is loaded
             const onConfigure = nodeType.prototype.onConfigure;
             nodeType.prototype.onConfigure = function(info) {
                 if (onConfigure) {
                     onConfigure.apply(this, arguments);
                 }
-                
+
                 console.log("[Ollama] OllamaModelSelector configured, checking for client");
                 setTimeout(() => checkAndFetchModels(this), 100);
             };
-            
+
             // Check after node is added to graph
             const onAdded = nodeType.prototype.onAdded;
             nodeType.prototype.onAdded = function() {
                 if (onAdded) {
                     onAdded.apply(this, arguments);
                 }
-                
+
                 console.log("[Ollama] OllamaModelSelector added to graph");
                 setTimeout(() => checkAndFetchModels(this), 200);
             };
