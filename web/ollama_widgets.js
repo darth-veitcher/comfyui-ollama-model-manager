@@ -180,7 +180,7 @@ app.registerExtension({
             const onConnectionsChange = nodeType.prototype.onConnectionsChange;
             nodeType.prototype.onConnectionsChange = async function(type, index, connected, link_info) {
                 console.log("[Ollama] onConnectionsChange fired:", {type, index, connected, link_info});
-                
+
                 if (onConnectionsChange) {
                     onConnectionsChange.apply(this, arguments);
                 }
@@ -189,18 +189,18 @@ app.registerExtension({
                     console.log("[Ollama] Input connection detected, checking if it's client...");
                     const input = this.inputs?.find((i, idx) => idx === index);
                     console.log("[Ollama] Input:", input);
-                    
+
                     if (input?.name === "client") {
                         console.log("[Ollama] ✓ Client connected to Model Selector - fetching models");
 
                         // Get the client endpoint from the connected node
                         const link = this.graph.links[this.inputs[0].link];
                         console.log("[Ollama] Link:", link);
-                        
+
                         if (link) {
                             const clientNode = this.graph.getNodeById(link.origin_id);
                             console.log("[Ollama] Client node:", clientNode);
-                            
+
                             if (clientNode && clientNode.type === "OllamaClient") {
                                 const endpointWidget = clientNode.widgets?.find(w => w.name === "endpoint");
                                 const endpoint = endpointWidget?.value || "http://localhost:11434";
@@ -211,7 +211,7 @@ app.registerExtension({
                                     // Make direct API call to Ollama
                                     const response = await fetch(`${endpoint}/api/tags`);
                                     console.log("[Ollama] Fetch response:", response);
-                                    
+
                                     if (response.ok) {
                                         const data = await response.json();
                                         console.log("[Ollama] API response data:", data);
@@ -253,28 +253,28 @@ app.registerExtension({
             const onConnectInput = nodeType.prototype.onConnectInput;
             nodeType.prototype.onConnectInput = function(inputIndex, outputType, outputSlot, outputNode, outputIndex) {
                 console.log("[Ollama] onConnectInput called:", {inputIndex, outputType, outputNode: outputNode?.type});
-                
+
                 const result = onConnectInput ? onConnectInput.apply(this, arguments) : true;
-                
+
                 // If client input is connected, trigger fetch
                 if (inputIndex === 0 && outputNode?.type === "OllamaClient") {
                     console.log("[Ollama] Client input connected via onConnectInput - triggering fetch");
-                    
+
                     // Small delay to ensure connection is fully established
                     setTimeout(async () => {
                         const endpointWidget = outputNode.widgets?.find(w => w.name === "endpoint");
                         const endpoint = endpointWidget?.value || "http://localhost:11434";
-                        
+
                         console.log("[Ollama] Fetching models from:", endpoint);
-                        
+
                         try {
                             const response = await fetch(`${endpoint}/api/tags`);
                             if (response.ok) {
                                 const data = await response.json();
                                 const models = data.models?.map(m => m.name) || [];
-                                
+
                                 console.log("[Ollama] ✓ Fetched", models.length, "models");
-                                
+
                                 if (models.length > 0) {
                                     updateModelDropdown(this, models);
                                 }
@@ -284,7 +284,7 @@ app.registerExtension({
                         }
                     }.bind(this), 100);
                 }
-                
+
                 return result;
             };
 
