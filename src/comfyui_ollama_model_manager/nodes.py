@@ -38,8 +38,8 @@ class OllamaRefreshModelList:
             },
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "*")
-    RETURN_NAMES = ("models_json", "models_display", "dependencies")
+    RETURN_TYPES = ("STRING", "*")
+    RETURN_NAMES = ("models_json", "dependencies")
     FUNCTION = "run"
     CATEGORY = "Ollama"
     OUTPUT_NODE = True
@@ -62,7 +62,7 @@ class OllamaRefreshModelList:
             set_models(endpoint, names)
             result = json.dumps(names, indent=2)
 
-            # Create a pretty formatted display for the UI
+            # Create a pretty formatted display for the custom widget
             display_lines = [
                 "=" * 50,
                 f"🤖 Available Ollama Models ({len(names)})",
@@ -78,10 +78,14 @@ class OllamaRefreshModelList:
 
             log.info(f"✅ Model list refreshed: {len(names)} models available")
 
-            # Return display text as a separate STRING output that shows in UI
+            # Return with custom UI widget data
             return {
-                "ui": {"text": (display_text,)},
-                "result": (result, display_text, dependencies),
+                "ui": {
+                    "models_display": [display_text],
+                    "model_count": [len(names)],
+                    "model_list": [names],
+                },
+                "result": (result, dependencies),
             }
 
         except Exception as e:

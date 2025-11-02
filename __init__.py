@@ -77,6 +77,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OllamaUnloadSelectedModel": "Ollama (Unload Selected Model)",
 }
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+# Tell ComfyUI where to find our web extensions
+WEB_DIRECTORY = "./web"
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 logging.info("[Ollama Manager] ✅ Loaded successfully")
