@@ -224,7 +224,7 @@ app.registerExtension({
 
             // Note: We don't fetch models from JavaScript due to CORS issues.
             // Models must be fetched by executing the workflow with refresh=true.
-            
+
             // Add a hint when node is created
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function() {
