@@ -54,6 +54,10 @@ except ImportError:
             "Required dependencies not installed. " "Run: pip install httpx loguru rich"
         ) from e
 
+# Register API routes for CORS-free model fetching
+from comfyui_ollama_model_manager.api import setup_api_routes  # noqa: E402
+from comfyui_ollama_model_manager.chat import OllamaChatCompletion  # noqa: E402
+
 # Import nodes from src package
 from comfyui_ollama_model_manager.nodes import (  # noqa: E402
     OllamaClient,
@@ -62,8 +66,16 @@ from comfyui_ollama_model_manager.nodes import (  # noqa: E402
     OllamaUnloadModel,
 )
 
-# Register API routes for CORS-free model fetching
-from comfyui_ollama_model_manager.api import setup_api_routes  # noqa: E402
+# Import option nodes
+from comfyui_ollama_model_manager.options import (  # noqa: E402
+    OllamaOptionExtraBody,
+    OllamaOptionMaxTokens,
+    OllamaOptionRepeatPenalty,
+    OllamaOptionSeed,
+    OllamaOptionTemperature,
+    OllamaOptionTopK,
+    OllamaOptionTopP,
+)
 
 setup_api_routes()
 
@@ -73,6 +85,14 @@ NODE_CLASS_MAPPINGS = {
     "OllamaModelSelector": OllamaModelSelector,
     "OllamaLoadModel": OllamaLoadModel,
     "OllamaUnloadModel": OllamaUnloadModel,
+    "OllamaChatCompletion": OllamaChatCompletion,
+    "OllamaOptionTemperature": OllamaOptionTemperature,
+    "OllamaOptionSeed": OllamaOptionSeed,
+    "OllamaOptionMaxTokens": OllamaOptionMaxTokens,
+    "OllamaOptionTopP": OllamaOptionTopP,
+    "OllamaOptionTopK": OllamaOptionTopK,
+    "OllamaOptionRepeatPenalty": OllamaOptionRepeatPenalty,
+    "OllamaOptionExtraBody": OllamaOptionExtraBody,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -80,6 +100,14 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OllamaModelSelector": "Ollama Model Selector",
     "OllamaLoadModel": "Ollama Load Model",
     "OllamaUnloadModel": "Ollama Unload Model",
+    "OllamaChatCompletion": "Ollama Chat Completion",
+    "OllamaOptionTemperature": "Ollama Option: Temperature",
+    "OllamaOptionSeed": "Ollama Option: Seed",
+    "OllamaOptionMaxTokens": "Ollama Option: Max Tokens",
+    "OllamaOptionTopP": "Ollama Option: Top P",
+    "OllamaOptionTopK": "Ollama Option: Top K",
+    "OllamaOptionRepeatPenalty": "Ollama Option: Repeat Penalty",
+    "OllamaOptionExtraBody": "Ollama Option: Extra Body",
 }
 
 # Tell ComfyUI where to find our web extensions
