@@ -172,6 +172,7 @@ async def chat_completion(
     messages: List[Dict[str, Any]],
     options: Dict[str, Any] | None = None,
     images: List[str] | None = None,
+    format: str | None = None,
 ) -> Dict[str, Any]:
     """
     Generate chat completion using Ollama's /api/chat endpoint.
@@ -194,6 +195,9 @@ async def chat_completion(
                  - num_ctx (int): Context window size
                  - And other Ollama-specific parameters
         images: Optional list of base64-encoded images for vision models
+        format: Optional format for structured output:
+                - "json": Force model to respond with valid JSON
+                - None: Free-form text response (default)
 
     Returns:
         Response dict with structure:
@@ -223,6 +227,16 @@ async def chat_completion(
         ...     options={"temperature": 0.7, "seed": 42}
         ... )
         >>> print(result["message"]["content"])
+        
+        >>> # JSON mode example
+        >>> result = await chat_completion(
+        ...     "http://localhost:11434",
+        ...     "llama3.2",
+        ...     messages=[{"role": "user", "content": "List 3 colors"}],
+        ...     format="json"
+        ... )
+        >>> import json
+        >>> data = json.loads(result["message"]["content"])
     """
     if not model or not model.strip():
         raise ValueError("Model name cannot be empty")
@@ -243,6 +257,10 @@ async def chat_completion(
     # Add optional parameters
     if options:
         payload["options"] = options
+
+    if format:
+        payload["format"] = format
+        log.debug(f"Using format: {format}")
 
     if images:
         # Add images to the last user message

@@ -112,6 +112,13 @@ For conversations with memory:
 | **Ollama Chat Completion** | Generate text with conversation history |
 | **Ollama Unload Model** | Unloads a model to free memory |
 
+### Debug/Utility Nodes
+
+| Node | Description |
+|------|-------------|
+| **Ollama Debug: History** | Formats conversation history as readable text for inspection |
+| **Ollama Debug: History Length** | Returns the number of messages in conversation history |
+
 ### Option Nodes (Composable Parameters)
 
 | Node | Parameter | Range/Type | Default | Description |
@@ -224,14 +231,72 @@ The **Ollama Chat Completion** node supports:
 - `prompt` - User message/question
 
 **Optional:**
+
 - `system_prompt` - Instructions to guide model behavior
 - `history` - Previous conversation (for multi-turn chat)
-- `options` - Generation parameters (temperature, seed, etc.) [*Coming in Phase 2*]
-- `image` - Image input for vision models [*Vision support available*]
+- `options` - Generation parameters (temperature, seed, etc.)
+- `format` - Output format: "none" (default, text) or "json" (structured JSON)
+- `image` - Image input for vision models
 
 **Outputs:**
+
 - `response` - Generated text
 - `history` - Updated conversation (connect to next chat node)
+
+### JSON Mode (Phase 3)
+
+The **format** parameter enables structured output for workflows that need parseable data:
+
+**Example: Extract structured data**
+
+```text
+[Chat Completion]
+├── format: "json"
+├── prompt: "Extract person data: 'Alice is 30 years old'"
+└── system_prompt: "Return JSON with keys: name, age"
+
+Output: {"name": "Alice", "age": 30}
+```
+
+**When to use JSON mode:**
+- Data extraction workflows
+- Structured output for downstream processing
+- API integrations requiring JSON
+- ComfyUI workflows that parse the response
+
+**Note:** Set `format` to "json" to enable. The model will ensure valid JSON output.
+
+### Debug Utilities (Phase 3)
+
+**Ollama Debug: History** - Inspect conversation memory
+
+```text
+[Chat History] → [Debug: History]
+                      ↓
+           Formatted Text Output:
+           === Conversation History (3 messages) ===
+           
+           [1] SYSTEM:
+               You are helpful
+           
+           [2] USER:
+               Hello
+           
+           [3] ASSISTANT:
+               Hi there!
+```
+
+**Ollama Debug: History Length** - Count messages
+
+```text
+[Chat History] → [History Length] → Output: 5 (messages)
+```
+
+**Use cases:**
+- Debugging conversation flow
+- Monitoring context length
+- Workflow conditional logic based on message count
+- Understanding what the model "remembers"
 
 ## Logging
 

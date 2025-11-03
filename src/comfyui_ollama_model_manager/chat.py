@@ -78,6 +78,13 @@ class OllamaChatCompletion:
                         "tooltip": "Generation parameters like temperature, seed, etc. (optional)",
                     },
                 ),
+                "format": (
+                    ["none", "json"],
+                    {
+                        "default": "none",
+                        "tooltip": "Output format: 'none' for text, 'json' for structured JSON response",
+                    },
+                ),
                 "image": (
                     "IMAGE",
                     {
@@ -136,6 +143,7 @@ class OllamaChatCompletion:
         system_prompt: str = "",
         history: List[Dict[str, str]] | None = None,
         options: Dict[str, Any] | None = None,
+        format: str = "none",
         image: Any = None,
     ) -> Tuple[str, List[Dict[str, str]]]:
         """
@@ -148,6 +156,7 @@ class OllamaChatCompletion:
             system_prompt: Optional system instructions
             history: Optional conversation history (list of message dicts)
             options: Optional generation parameters
+            format: Output format - 'none' for text or 'json' for JSON mode
             image: Optional image tensor for vision models
 
         Returns:
@@ -191,6 +200,9 @@ class OllamaChatCompletion:
 
         log.info(f"💬 Generating response with {len(messages)} messages")
 
+        # Prepare format parameter for Ollama API
+        format_param = format if format != "none" else None
+
         # Call Ollama chat API
         result = run_async(
             chat_completion(
@@ -199,6 +211,7 @@ class OllamaChatCompletion:
                 messages=messages,
                 options=options,
                 images=images,
+                format=format_param,
             )
         )
 
@@ -272,11 +285,120 @@ class OllamaChatCompletion:
         return images_b64
 
 
+class OllamaDebugHistory:
+    """
+    Debug node to inspect conversation history.
+    
+    This utility node helps visualize and debug conversation history
+    by converting it to a formatted string. Useful for:
+    - Understanding conversation flow
+    - Debugging history issues
+    - Inspecting message structure
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls) -> Dict[str, Any]:
+        return {
+            "required": {
+                "history": (
+                    OllamaIO.HISTORY,
+                    {
+                        "tooltip": "Conversation history to inspect",
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("formatted_history",)
+    FUNCTION = "format_history"
+    CATEGORY = "Ollama/Debug"
+    OUTPUT_NODE = True
+
+    def format_history(
+        self, history: List[Dict[str, str]]
+    ) -> Tuple[str]:
+        """
+        Format conversation history as readable text.
+        
+        Args:
+            history: List of message dicts from conversation
+        
+        Returns:
+            Tuple containing formatted history string
+        """
+        if not history:
+            return ("(Empty history)",)
+        
+        lines = []
+        lines.append(f"=== Conversation History ({len(history)} messages) ===\n")
+        
+        for i, msg in enumerate(history, 1):
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            
+            # Truncate very long messages
+            if len(content) > 200:
+                content = content[:200] + "..."
+            
+            lines.append(f"[{i}] {role.upper()}:")
+            lines.append(f"    {content}\n")
+        
+        formatted = "\n".join(lines)
+        log.debug(f"Formatted history: {len(history)} messages")
+        
+        return (formatted,)
+
+
+class OllamaHistoryLength:
+    """
+    Get the number of messages in conversation history.
+    
+    Useful for conditional workflows or debugging.
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls) -> Dict[str, Any]:
+        return {
+            "required": {
+                "history": (
+                    OllamaIO.HISTORY,
+                    {
+                        "tooltip": "Conversation history to count",
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("INT",)
+    RETURN_NAMES = ("length",)
+    FUNCTION = "get_length"
+    CATEGORY = "Ollama/Debug"
+
+    def get_length(self, history: List[Dict[str, str]]) -> Tuple[int]:
+        """
+        Get the number of messages in history.
+        
+        Args:
+            history: Conversation history
+        
+        Returns:
+            Tuple containing message count
+        """
+        if not history:
+            return (0,)
+        return (len(history),)
+
+
 # Node mappings for ComfyUI registration
 NODE_CLASS_MAPPINGS = {
     "OllamaChatCompletion": OllamaChatCompletion,
+    "OllamaDebugHistory": OllamaDebugHistory,
+    "OllamaHistoryLength": OllamaHistoryLength,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OllamaChatCompletion": "Ollama Chat Completion",
+    "OllamaDebugHistory": "Ollama Debug: History",
+    "OllamaHistoryLength": "Ollama Debug: History Length",
 }

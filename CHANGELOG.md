@@ -2,7 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - develop branch
+## [Unreleased] - feature/phase-3-advanced branch
+
+### Added - Phase 3: Advanced Features (JSON Mode & Debug Utilities) 🚧
+
+- 🔧 **JSON Mode** - Structured output for parseable data
+  - Added `format` parameter to `chat_completion()` API
+  - Added format dropdown to OllamaChatCompletion node ("none" or "json")
+  - Enables data extraction workflows and API integrations
+- 🐛 **Debug Utility Nodes** - Inspect conversation state
+  - **OllamaDebugHistory** - Format conversation history as readable text
+  - **OllamaHistoryLength** - Count messages in conversation
+- 📝 Comprehensive test coverage (11 new tests, 107 total)
+- 📚 Updated documentation with JSON mode examples and debug utilities
+
+### Technical Changes
+
+**Phase 3:**
+- Extended `ollama_client.py` with `format` parameter in `chat_completion()`
+- Updated `chat.py` to add format dropdown to OllamaChatCompletion
+- Added 2 debug nodes: `OllamaDebugHistory` and `OllamaHistoryLength`
+- Updated `__init__.py` to register debug nodes
+- Added `tests/test_chat.py::TestPhase3Features` - 11 tests
+- Updated README.md with JSON mode section and debug utilities
+
+### Test Results
+
+- **107 tests passing** (31 base + 32 chat + 44 options)
+- 100% coverage for Phase 3 features
+
+## [Released] - main branch
 
 ### Added - Phase 1: Chat Completion ✅
 
