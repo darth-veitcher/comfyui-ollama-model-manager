@@ -117,21 +117,25 @@ class OllamaChatCompletion:
             NaN if no seed (always re-execute), or stable hash if seed present (cache results)
         """
         options = kwargs.get("options")
-        
+
         # If options exist and contain a seed, allow caching by returning a stable value
         if options and isinstance(options, dict) and "seed" in options:
             # Return a hash of all inputs for cache key
             # This allows ComfyUI to cache results when inputs are identical
             import json
-            cache_key = json.dumps({
-                "model": kwargs.get("model", ""),
-                "prompt": kwargs.get("prompt", ""),
-                "system_prompt": kwargs.get("system_prompt", ""),
-                "format": kwargs.get("format", "none"),
-                "options": options,
-            }, sort_keys=True)
+
+            cache_key = json.dumps(
+                {
+                    "model": kwargs.get("model", ""),
+                    "prompt": kwargs.get("prompt", ""),
+                    "system_prompt": kwargs.get("system_prompt", ""),
+                    "format": kwargs.get("format", "none"),
+                    "options": options,
+                },
+                sort_keys=True,
+            )
             return hash(cache_key)
-        
+
         # No seed present - return NaN to force re-execution (non-deterministic)
         return float("nan")
 
