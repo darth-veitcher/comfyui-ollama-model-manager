@@ -56,7 +56,11 @@ except ImportError:
 
 # Register API routes for CORS-free model fetching
 from comfyui_ollama_model_manager.api import setup_api_routes  # noqa: E402
-from comfyui_ollama_model_manager.chat import OllamaChatCompletion  # noqa: E402
+from comfyui_ollama_model_manager.chat import (  # noqa: E402
+    OllamaChatCompletion,
+    OllamaDebugHistory,
+    OllamaHistoryLength,
+)
 
 # Import nodes from src package
 from comfyui_ollama_model_manager.nodes import (  # noqa: E402
@@ -86,6 +90,8 @@ NODE_CLASS_MAPPINGS = {
     "OllamaLoadModel": OllamaLoadModel,
     "OllamaUnloadModel": OllamaUnloadModel,
     "OllamaChatCompletion": OllamaChatCompletion,
+    "OllamaDebugHistory": OllamaDebugHistory,
+    "OllamaHistoryLength": OllamaHistoryLength,
     "OllamaOptionTemperature": OllamaOptionTemperature,
     "OllamaOptionSeed": OllamaOptionSeed,
     "OllamaOptionMaxTokens": OllamaOptionMaxTokens,
@@ -101,6 +107,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OllamaLoadModel": "Ollama Load Model",
     "OllamaUnloadModel": "Ollama Unload Model",
     "OllamaChatCompletion": "Ollama Chat Completion",
+    "OllamaDebugHistory": "Ollama Debug: History",
+    "OllamaHistoryLength": "Ollama Debug: History Length",
     "OllamaOptionTemperature": "Ollama Option: Temperature",
     "OllamaOptionSeed": "Ollama Option: Seed",
     "OllamaOptionMaxTokens": "Ollama Option: Max Tokens",
