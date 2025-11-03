@@ -47,16 +47,50 @@ ComfyUI\python_embeded\python.exe install.py
 ComfyUI\python_embeded\python.exe -m pip install httpx loguru rich
 ```
 
-## Nodes
+## 🎯 Quick Start Guide
+
+### Step 1: Add Ollama Client
+
+1. Add an **Ollama Client** node to your workflow
+2. Set `endpoint` to your Ollama server URL
+   - Default: `http://localhost:11434`
+   - Or use your remote server URL
+
+### Step 2: Add Model Selector
+
+1. Add an **Ollama Model Selector** node
+2. Connect the `client` output from **Ollama Client** to the `client` input
+3. **✨ Models auto-fetch immediately!** - No need to execute the workflow
+4. Select your desired model from the dropdown
+
+### Step 3: Load the Model
+
+1. Add an **Ollama Load Model** node
+2. Connect `client` from **Model Selector**
+3. The model dropdown auto-populates with available models
+4. Set `keep_alive` (default `-1` keeps it loaded)
+5. Execute the workflow to load the model
+
+### Step 4: Use Your Model
+
+Connect to your Ollama processing nodes (text generation, embeddings, etc.)
+
+### Step 5: Unload When Done (Optional)
+
+1. Add an **Ollama Unload Model** node
+2. Connect it after your processing
+3. This frees up memory
+
+## Nodes Reference
 
 | Node | Description |
 |------|-------------|
 | **Ollama Client** | Creates a reusable Ollama connection config |
-| **Ollama Model Selector** | Select model with optional auto-refresh |
+| **Ollama Model Selector** | Select model with auto-fetch on connection |
 | **Ollama Load Model** | Loads a model into Ollama's memory |
 | **Ollama Unload Model** | Unloads a model to free memory |
 
-## Usage
+## Advanced Usage
 
 The architecture provides a clean, composable workflow:
 
