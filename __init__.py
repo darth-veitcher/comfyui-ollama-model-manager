@@ -61,6 +61,9 @@ from comfyui_ollama_model_manager.nodes import (  # noqa: E402
     OllamaModelSelector,
     OllamaUnloadModel,
 )
+from comfyui_ollama_model_manager.chat import (  # noqa: E402
+    OllamaChatCompletion,
+)
 
 # Register API routes for CORS-free model fetching
 from comfyui_ollama_model_manager.api import setup_api_routes  # noqa: E402
@@ -73,6 +76,7 @@ NODE_CLASS_MAPPINGS = {
     "OllamaModelSelector": OllamaModelSelector,
     "OllamaLoadModel": OllamaLoadModel,
     "OllamaUnloadModel": OllamaUnloadModel,
+    "OllamaChatCompletion": OllamaChatCompletion,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -80,6 +84,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OllamaModelSelector": "Ollama Model Selector",
     "OllamaLoadModel": "Ollama Load Model",
     "OllamaUnloadModel": "Ollama Unload Model",
+    "OllamaChatCompletion": "Ollama Chat Completion",
 }
 
 # Tell ComfyUI where to find our web extensions

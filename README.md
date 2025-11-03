@@ -4,7 +4,8 @@ Custom nodes for managing [Ollama](https://ollama.com/) models in ComfyUI workfl
 
 ## Features
 
-- � **Auto-Fetch Models** - Models load automatically when you connect nodes (no workflow execution needed!)
+- 🔄 **Auto-Fetch Models** - Models load automatically when you connect nodes (no workflow execution needed!)
+- 💬 **Chat Completion** - Full text generation with conversation history
 - 🔄 **Dynamic Dropdowns** - Model list updates instantly via ComfyUI API
 - 🎯 **Type-Safe Connections** - Client config passed between nodes
 - ⬇️ **Load/Unload Models** - Control memory usage efficiently
@@ -71,11 +72,29 @@ ComfyUI\python_embeded\python.exe -m pip install httpx loguru rich
 4. Set `keep_alive` (default `-1` keeps it loaded)
 5. Execute the workflow to load the model
 
-### Step 4: Use Your Model
+### Step 4: Generate Text with Chat
 
-Connect to your Ollama processing nodes (text generation, embeddings, etc.)
+1. Add an **Ollama Chat Completion** node
+2. Connect `client` from **Model Selector** (model auto-populates)
+3. Enter your prompt in the `prompt` field
+4. (Optional) Add a `system_prompt` to control behavior
+5. Execute to generate a response!
 
-### Step 5: Unload When Done (Optional)
+**Example:**
+- **prompt**: "Write a haiku about programming"
+- **system_prompt**: "You are a helpful assistant"
+- **response**: Returns the generated text
+- **history**: Returns the conversation (for multi-turn chat)
+
+### Step 5: Multi-Turn Conversations (Optional)
+
+For conversations with memory:
+
+1. Connect the `history` output from one **Chat Completion** node
+2. To the `history` input of the next **Chat Completion** node
+3. Each response remembers the previous messages
+
+### Step 6: Unload When Done (Optional)
 
 1. Add an **Ollama Unload Model** node
 2. Connect it after your processing
@@ -88,6 +107,7 @@ Connect to your Ollama processing nodes (text generation, embeddings, etc.)
 | **Ollama Client** | Creates a reusable Ollama connection config |
 | **Ollama Model Selector** | Select model with auto-fetch on connection |
 | **Ollama Load Model** | Loads a model into Ollama's memory |
+| **Ollama Chat Completion** | Generate text with conversation history |
 | **Ollama Unload Model** | Unloads a model to free memory |
 
 ## Advanced Usage
@@ -95,20 +115,22 @@ Connect to your Ollama processing nodes (text generation, embeddings, etc.)
 The architecture provides a clean, composable workflow:
 
 ```text
-[Ollama Client] → [Model Selector] → [Load Model] → [Your Processing] → [Unload Model]
-       ↓               ↓                   ↓
-  (endpoint)     (pick model,        (load with
-                  auto-refresh)       keep_alive)
+[Ollama Client] → [Model Selector] → [Load Model] → [Chat Completion] → [Unload Model]
+       ↓               ↓                   ↓                ↓
+  (endpoint)     (pick model,        (load with)      (generate text,
+                  auto-refresh)       keep_alive)      track history)
 ```
 
 **Key Benefits:**
+
 - **Reusable Client**: Create one client, connect to multiple nodes
 - **Auto-refresh**: Model Selector can refresh the list automatically
 - **Type Safety**: Client connection passed between nodes
 - **Cleaner Workflows**: Less redundant endpoint configuration
 - **Dynamic Dropdowns**: Model list automatically populates after refresh
+- **Conversation Memory**: History passed between chat nodes for multi-turn conversations
 
-**Example Workflow:**
+**Example Workflow: Simple Chat**
 
 ```text
 1. Ollama Client (endpoint: http://localhost:11434)
@@ -117,12 +139,24 @@ The architecture provides a clean, composable workflow:
        ↓
 3. Load Model (keep_alive: "-1")
        ↓
-4. [Your Ollama Processing Nodes]
+4. Chat Completion (prompt: "Hello!")
        ↓
 5. Unload Model
 ```
 
-This pattern optimizes memory by unloading models when not needed.
+**Example Workflow: Multi-Turn Conversation**
+
+```text
+1. [Client] → [Selector] → [Load] → [Chat 1: "My name is Alice"]
+                                          ↓ (history)
+                                    [Chat 2: "What's my name?"]
+                                          ↓ (history)
+                                    [Chat 3: "Tell me a joke"]
+       ↓
+2. Unload Model
+```
+
+This pattern optimizes memory by unloading models when not needed, while maintaining full conversation context.
 
 ## Configuration
 
@@ -135,10 +169,30 @@ Override by specifying a different endpoint in the "Refresh Model List" or "Load
 ### Keep Alive
 
 Control how long models stay in memory:
+
 - `-1` (default): Keep loaded indefinitely
 - `5m`: Keep for 5 minutes
 - `1h`: Keep for 1 hour
 - `0`: Unload immediately
+
+### Chat Parameters
+
+The **Ollama Chat Completion** node supports:
+
+**Required:**
+- `client` - Ollama client connection
+- `model` - Model name (auto-populated from selector)
+- `prompt` - User message/question
+
+**Optional:**
+- `system_prompt` - Instructions to guide model behavior
+- `history` - Previous conversation (for multi-turn chat)
+- `options` - Generation parameters (temperature, seed, etc.) [*Coming in Phase 2*]
+- `image` - Image input for vision models [*Vision support available*]
+
+**Outputs:**
+- `response` - Generated text
+- `history` - Updated conversation (connect to next chat node)
 
 ## Logging
 
@@ -174,12 +228,17 @@ comfyui-ollama-model-manager/
 ├── src/
 │   └── comfyui_ollama_model_manager/
 │       ├── __init__.py      # Package init
-│       ├── nodes.py         # Node definitions
-│       ├── ollama_client.py # API client
+│       ├── nodes.py         # Model management nodes
+│       ├── chat.py          # Chat completion node
+│       ├── types.py         # Custom type definitions
+│       ├── ollama_client.py # API client (fetch, load, unload, chat)
+│       ├── api.py           # ComfyUI API routes
 │       ├── state.py         # Model cache
 │       ├── log_config.py    # Logging setup
 │       └── async_utils.py   # Async utilities
-└── tests/                   # Pytest test suite
+├── tests/                   # Pytest test suite (52 tests)
+└── web/
+    └── ollama_widgets.js    # Auto-fetch UI logic
 ```
 
 ### Running Tests

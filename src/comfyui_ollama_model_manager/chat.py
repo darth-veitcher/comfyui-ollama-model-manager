@@ -1,0 +1,275 @@
+"""Chat completion nodes for Ollama integration."""
+
+from typing import Any, Dict, List, Tuple
+
+from .async_utils import run_async
+from .log_config import get_logger
+from .ollama_client import chat_completion
+from .types import OllamaIO
+
+log = get_logger()
+
+
+class OllamaChatCompletion:
+    """
+    Generate chat completions using Ollama models.
+    
+    This node provides text generation with conversation history management,
+    system prompts, and configurable generation parameters. It integrates
+    seamlessly with OllamaClient and OllamaModelSelector nodes.
+    
+    Supports:
+    - Multi-turn conversations via history
+    - System prompts for behavior control
+    - Optional generation parameters (temperature, seed, etc.)
+    - Vision models via image input
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls) -> Dict[str, Any]:
+        """
+        Define input parameters for the chat completion node.
+        
+        Returns:
+            Dict specifying required and optional inputs with their types
+        """
+        return {
+            "required": {
+                "client": (
+                    OllamaIO.CLIENT,
+                    {
+                        "tooltip": "Ollama client connection from OllamaClient or OllamaModelSelector node",
+                    },
+                ),
+                "model": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Model name to use for generation (auto-populated from selector)",
+                    },
+                ),
+                "prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "User prompt or question to send to the model",
+                    },
+                ),
+            },
+            "optional": {
+                "system_prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "System instructions to guide model behavior (optional)",
+                    },
+                ),
+                "history": (
+                    OllamaIO.HISTORY,
+                    {
+                        "tooltip": "Conversation history from previous chat turns (optional)",
+                    },
+                ),
+                "options": (
+                    OllamaIO.OPTIONS,
+                    {
+                        "tooltip": "Generation parameters like temperature, seed, etc. (optional)",
+                    },
+                ),
+                "image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Image input for vision models (optional)",
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("STRING", OllamaIO.HISTORY)
+    RETURN_NAMES = ("response", "history")
+    FUNCTION = "generate"
+    CATEGORY = "Ollama"
+    OUTPUT_NODE = True
+
+    @classmethod
+    def IS_CHANGED(cls, **kwargs) -> float:
+        """
+        Force node to always re-execute.
+        
+        This ensures that chat completions are generated fresh on every run,
+        even if inputs haven't changed. This is important for non-deterministic
+        generation (when seed is not set).
+        
+        Returns:
+            NaN to indicate the node should always be considered "changed"
+        """
+        return float("nan")
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, **kwargs) -> bool | str:
+        """
+        Validate input parameters before execution.
+        
+        Args:
+            **kwargs: Input parameters from the node
+        
+        Returns:
+            True if valid, error message string if invalid
+        """
+        model = kwargs.get("model", "").strip()
+        if not model:
+            return "Model name cannot be empty. Please connect a model selector."
+        
+        prompt = kwargs.get("prompt", "").strip()
+        if not prompt:
+            return "Prompt cannot be empty. Please provide a user message."
+        
+        return True
+
+    def generate(
+        self,
+        client: Dict[str, str],
+        model: str,
+        prompt: str,
+        system_prompt: str = "",
+        history: List[Dict[str, str]] | None = None,
+        options: Dict[str, Any] | None = None,
+        image: Any = None,
+    ) -> Tuple[str, List[Dict[str, str]]]:
+        """
+        Generate chat completion using Ollama.
+        
+        Args:
+            client: Ollama client dict with 'endpoint' key
+            model: Name of the model to use
+            prompt: User prompt/question
+            system_prompt: Optional system instructions
+            history: Optional conversation history (list of message dicts)
+            options: Optional generation parameters
+            image: Optional image tensor for vision models
+        
+        Returns:
+            Tuple of (response_text, updated_history)
+        """
+        endpoint = client.get("endpoint", "")
+        if not endpoint:
+            raise ValueError("Client endpoint is missing or empty")
+        
+        # Build messages list from history and new prompt
+        messages: List[Dict[str, str]] = []
+        
+        # Add previous messages from history
+        if history:
+            messages.extend(history)
+        
+        # Add system prompt if provided and not already in history
+        if system_prompt and system_prompt.strip():
+            # Only add system prompt if it's not already the first message
+            if not messages or messages[0].get("role") != "system":
+                messages.insert(0, {
+                    "role": "system",
+                    "content": system_prompt.strip(),
+                })
+        
+        # Add current user prompt
+        messages.append({
+            "role": "user",
+            "content": prompt.strip(),
+        })
+        
+        # Convert image if provided
+        images = None
+        if image is not None:
+            images = self._convert_image_to_base64(image)
+        
+        log.info(f"💬 Generating response with {len(messages)} messages")
+        
+        # Call Ollama chat API
+        result = run_async(
+            chat_completion(
+                endpoint=endpoint,
+                model=model,
+                messages=messages,
+                options=options,
+                images=images,
+            )
+        )
+        
+        # Extract response
+        assistant_message = result.get("message", {})
+        response_text = assistant_message.get("content", "")
+        
+        # Update history with assistant response
+        updated_history = messages.copy()
+        updated_history.append({
+            "role": "assistant",
+            "content": response_text,
+        })
+        
+        log.info(f"✅ Generated response ({len(response_text)} chars)")
+        
+        return (response_text, updated_history)
+    
+    def _convert_image_to_base64(self, image: Any) -> List[str]:
+        """
+        Convert ComfyUI image tensor to base64 PNG for Ollama.
+        
+        Args:
+            image: ComfyUI IMAGE tensor (batch, height, width, channels)
+        
+        Returns:
+            List of base64-encoded PNG strings
+        """
+        import base64
+        from io import BytesIO
+        
+        import numpy as np
+        from PIL import Image
+        
+        images_b64 = []
+        
+        # ComfyUI images are tensors with shape (batch, height, width, channels)
+        # Values are typically in range [0, 1]
+        if not isinstance(image, np.ndarray):
+            # Convert torch tensor to numpy if needed
+            try:
+                image = image.cpu().numpy()
+            except Exception:
+                pass
+        
+        # Handle single image or batch
+        if len(image.shape) == 3:
+            # Single image: (height, width, channels)
+            image = np.expand_dims(image, 0)
+        
+        # Process each image in batch
+        for img_array in image:
+            # Convert from [0, 1] to [0, 255]
+            if img_array.max() <= 1.0:
+                img_array = (img_array * 255).astype(np.uint8)
+            
+            # Convert to PIL Image
+            pil_image = Image.fromarray(img_array)
+            
+            # Convert to PNG bytes
+            buffer = BytesIO()
+            pil_image.save(buffer, format="PNG")
+            buffer.seek(0)
+            
+            # Encode as base64
+            img_b64 = base64.b64encode(buffer.read()).decode("utf-8")
+            images_b64.append(img_b64)
+        
+        return images_b64
+
+
+# Node mappings for ComfyUI registration
+NODE_CLASS_MAPPINGS = {
+    "OllamaChatCompletion": OllamaChatCompletion,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "OllamaChatCompletion": "Ollama Chat Completion",
+}
