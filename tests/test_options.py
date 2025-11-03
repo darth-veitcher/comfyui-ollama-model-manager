@@ -30,7 +30,7 @@ class TestOllamaOptionTemperature:
         """Test merging temperature when no existing options."""
         node = OllamaOptionTemperature()
         result = node.merge(temperature=0.7)
-        
+
         assert isinstance(result, tuple)
         assert len(result) == 1
         options = result[0]
@@ -42,7 +42,7 @@ class TestOllamaOptionTemperature:
         node = OllamaOptionTemperature()
         existing_options = {"seed": 42, "max_tokens": 100}
         result = node.merge(temperature=0.9, options=existing_options)
-        
+
         options = result[0]
         assert options["temperature"] == 0.9
         assert options["seed"] == 42
@@ -53,9 +53,9 @@ class TestOllamaOptionTemperature:
         node = OllamaOptionTemperature()
         existing_options = {"seed": 42}
         original_options = existing_options.copy()
-        
+
         node.merge(temperature=0.7, options=existing_options)
-        
+
         assert existing_options == original_options
 
 
@@ -72,7 +72,7 @@ class TestOllamaOptionSeed:
         """Test merging seed value."""
         node = OllamaOptionSeed()
         result = node.merge(seed=123)
-        
+
         options = result[0]
         assert options["seed"] == 123
 
@@ -81,7 +81,7 @@ class TestOllamaOptionSeed:
         node = OllamaOptionSeed()
         existing = {"temperature": 0.7}
         result = node.merge(seed=456, options=existing)
-        
+
         options = result[0]
         assert options["seed"] == 456
         assert options["temperature"] == 0.7
@@ -99,7 +99,7 @@ class TestOllamaOptionMaxTokens:
         """Test that max_tokens is mapped to num_predict for Ollama."""
         node = OllamaOptionMaxTokens()
         result = node.merge(max_tokens=200)
-        
+
         options = result[0]
         # Should use Ollama's parameter name
         assert options["num_predict"] == 200
@@ -110,7 +110,7 @@ class TestOllamaOptionMaxTokens:
         node = OllamaOptionMaxTokens()
         existing = {"temperature": 0.8}
         result = node.merge(max_tokens=150, options=existing)
-        
+
         options = result[0]
         assert options["num_predict"] == 150
         assert options["temperature"] == 0.8
@@ -128,7 +128,7 @@ class TestOllamaOptionTopP:
         """Test merging top_p value."""
         node = OllamaOptionTopP()
         result = node.merge(top_p=0.95)
-        
+
         options = result[0]
         assert options["top_p"] == 0.95
 
@@ -137,7 +137,7 @@ class TestOllamaOptionTopP:
         node = OllamaOptionTopP()
         existing = {"seed": 42}
         result = node.merge(top_p=0.85, options=existing)
-        
+
         options = result[0]
         assert options["top_p"] == 0.85
         assert options["seed"] == 42
@@ -155,7 +155,7 @@ class TestOllamaOptionTopK:
         """Test merging top_k value (Ollama-specific)."""
         node = OllamaOptionTopK()
         result = node.merge(top_k=50)
-        
+
         options = result[0]
         assert options["top_k"] == 50
 
@@ -164,7 +164,7 @@ class TestOllamaOptionTopK:
         node = OllamaOptionTopK()
         existing = {"temperature": 0.7}
         result = node.merge(top_k=30, options=existing)
-        
+
         options = result[0]
         assert options["top_k"] == 30
         assert options["temperature"] == 0.7
@@ -182,7 +182,7 @@ class TestOllamaOptionRepeatPenalty:
         """Test merging repeat_penalty value (Ollama-specific)."""
         node = OllamaOptionRepeatPenalty()
         result = node.merge(repeat_penalty=1.2)
-        
+
         options = result[0]
         assert options["repeat_penalty"] == 1.2
 
@@ -191,7 +191,7 @@ class TestOllamaOptionRepeatPenalty:
         node = OllamaOptionRepeatPenalty()
         existing = {"seed": 123}
         result = node.merge(repeat_penalty=1.5, options=existing)
-        
+
         options = result[0]
         assert options["repeat_penalty"] == 1.5
         assert options["seed"] == 123
@@ -207,16 +207,12 @@ class TestOllamaOptionExtraBody:
 
     def test_validate_valid_json(self):
         """Test that valid JSON passes validation."""
-        result = OllamaOptionExtraBody.VALIDATE_INPUTS(
-            extra_body='{"num_ctx": 2048}'
-        )
+        result = OllamaOptionExtraBody.VALIDATE_INPUTS(extra_body='{"num_ctx": 2048}')
         assert result is True
 
     def test_validate_invalid_json(self):
         """Test that invalid JSON fails validation."""
-        result = OllamaOptionExtraBody.VALIDATE_INPUTS(
-            extra_body='{invalid json}'
-        )
+        result = OllamaOptionExtraBody.VALIDATE_INPUTS(extra_body="{invalid json}")
         assert isinstance(result, str)
         assert "Invalid JSON" in result
 
@@ -225,7 +221,7 @@ class TestOllamaOptionExtraBody:
         node = OllamaOptionExtraBody()
         extra_body = json.dumps({"num_ctx": 4096, "num_gpu": 1})
         result = node.merge(extra_body=extra_body)
-        
+
         options = result[0]
         assert options["num_ctx"] == 4096
         assert options["num_gpu"] == 1
@@ -236,7 +232,7 @@ class TestOllamaOptionExtraBody:
         existing = {"temperature": 0.7, "seed": 42}
         extra_body = json.dumps({"num_ctx": 2048, "stop": ["END"]})
         result = node.merge(extra_body=extra_body, options=existing)
-        
+
         options = result[0]
         assert options["temperature"] == 0.7
         assert options["seed"] == 42
@@ -249,7 +245,7 @@ class TestOllamaOptionExtraBody:
         existing = {"temperature": 0.7}
         extra_body = json.dumps({"temperature": 0.9})
         result = node.merge(extra_body=extra_body, options=existing)
-        
+
         options = result[0]
         # extra_body should overwrite existing temperature
         assert options["temperature"] == 0.9
@@ -259,7 +255,7 @@ class TestOllamaOptionExtraBody:
         node = OllamaOptionExtraBody()
         existing = {"seed": 42}
         result = node.merge(extra_body="{}", options=existing)
-        
+
         options = result[0]
         # Should preserve existing options
         assert options["seed"] == 42
@@ -272,15 +268,15 @@ class TestOptionChaining:
         """Test chaining two option nodes."""
         temp_node = OllamaOptionTemperature()
         seed_node = OllamaOptionSeed()
-        
+
         # First node
         result1 = temp_node.merge(temperature=0.7)
         options1 = result1[0]
-        
+
         # Second node receives output from first
         result2 = seed_node.merge(seed=42, options=options1)
         options2 = result2[0]
-        
+
         assert options2["temperature"] == 0.7
         assert options2["seed"] == 42
 
@@ -289,12 +285,12 @@ class TestOptionChaining:
         temp_node = OllamaOptionTemperature()
         seed_node = OllamaOptionSeed()
         max_tokens_node = OllamaOptionMaxTokens()
-        
+
         # Chain them together
         result1 = temp_node.merge(temperature=0.8)
         result2 = seed_node.merge(seed=123, options=result1[0])
         result3 = max_tokens_node.merge(max_tokens=200, options=result2[0])
-        
+
         final_options = result3[0]
         assert final_options["temperature"] == 0.8
         assert final_options["seed"] == 123
@@ -303,7 +299,7 @@ class TestOptionChaining:
     def test_chain_all_option_types(self):
         """Test chaining all option node types."""
         options = None
-        
+
         # Chain all options together
         temp_result = OllamaOptionTemperature().merge(0.7, options)
         seed_result = OllamaOptionSeed().merge(42, temp_result[0])
@@ -314,7 +310,7 @@ class TestOptionChaining:
         extra_result = OllamaOptionExtraBody().merge(
             '{"num_ctx": 2048}', repeat_result[0]
         )
-        
+
         final_options = extra_result[0]
         assert final_options["temperature"] == 0.7
         assert final_options["seed"] == 42
@@ -328,10 +324,10 @@ class TestOptionChaining:
         """Test that later options overwrite earlier ones."""
         temp_node1 = OllamaOptionTemperature()
         temp_node2 = OllamaOptionTemperature()
-        
+
         result1 = temp_node1.merge(temperature=0.5)
         result2 = temp_node2.merge(temperature=0.9, options=result1[0])
-        
+
         final_options = result2[0]
         # Later value should win
         assert final_options["temperature"] == 0.9
@@ -340,15 +336,18 @@ class TestOptionChaining:
 class TestNodeAttributes:
     """Test that all nodes have required attributes."""
 
-    @pytest.mark.parametrize("node_class", [
-        OllamaOptionTemperature,
-        OllamaOptionSeed,
-        OllamaOptionMaxTokens,
-        OllamaOptionTopP,
-        OllamaOptionTopK,
-        OllamaOptionRepeatPenalty,
-        OllamaOptionExtraBody,
-    ])
+    @pytest.mark.parametrize(
+        "node_class",
+        [
+            OllamaOptionTemperature,
+            OllamaOptionSeed,
+            OllamaOptionMaxTokens,
+            OllamaOptionTopP,
+            OllamaOptionTopK,
+            OllamaOptionRepeatPenalty,
+            OllamaOptionExtraBody,
+        ],
+    )
     def test_node_has_required_attributes(self, node_class):
         """Test that each option node has required ComfyUI attributes."""
         assert hasattr(node_class, "INPUT_TYPES")
@@ -356,22 +355,25 @@ class TestNodeAttributes:
         assert hasattr(node_class, "RETURN_NAMES")
         assert hasattr(node_class, "FUNCTION")
         assert hasattr(node_class, "CATEGORY")
-        
+
         # Check values
         assert node_class.RETURN_TYPES == ("OLLAMA_OPTIONS",)
         assert node_class.RETURN_NAMES == ("options",)
         assert node_class.FUNCTION == "merge"
         assert node_class.CATEGORY == "Ollama/Options"
 
-    @pytest.mark.parametrize("node_class", [
-        OllamaOptionTemperature,
-        OllamaOptionSeed,
-        OllamaOptionMaxTokens,
-        OllamaOptionTopP,
-        OllamaOptionTopK,
-        OllamaOptionRepeatPenalty,
-        OllamaOptionExtraBody,
-    ])
+    @pytest.mark.parametrize(
+        "node_class",
+        [
+            OllamaOptionTemperature,
+            OllamaOptionSeed,
+            OllamaOptionMaxTokens,
+            OllamaOptionTopP,
+            OllamaOptionTopK,
+            OllamaOptionRepeatPenalty,
+            OllamaOptionExtraBody,
+        ],
+    )
     def test_node_can_be_instantiated(self, node_class):
         """Test that each node can be instantiated."""
         node = node_class()

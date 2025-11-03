@@ -18,12 +18,12 @@ from .types import OllamaIO
 class OllamaOptionTemperature:
     """
     Control randomness in generation.
-    
+
     Temperature affects how the model samples tokens:
     - 0.0 = Deterministic (always picks most likely token)
     - 0.8 = Balanced (default)
     - 2.0 = Very creative/random
-    
+
     Higher values make output more random, lower values make it more focused.
     """
 
@@ -72,7 +72,7 @@ class OllamaOptionTemperature:
 class OllamaOptionSeed:
     """
     Set random seed for reproducible generation.
-    
+
     When set, the same prompt with the same seed will produce the same output
     (assuming other parameters are identical). Useful for:
     - Testing and debugging
@@ -124,10 +124,10 @@ class OllamaOptionSeed:
 class OllamaOptionMaxTokens:
     """
     Limit maximum tokens to generate.
-    
+
     Controls the length of the generated response. In Ollama, this maps to
     the 'num_predict' parameter.
-    
+
     Note: This is a maximum limit, not a target. The model may generate
     fewer tokens if it reaches a natural stopping point.
     """
@@ -178,11 +178,11 @@ class OllamaOptionMaxTokens:
 class OllamaOptionTopP:
     """
     Control nucleus sampling.
-    
+
     Top-p (nucleus) sampling considers the smallest set of tokens whose
     cumulative probability exceeds p. This is an alternative to temperature
     for controlling randomness.
-    
+
     - 1.0 = Consider all tokens (default)
     - 0.9 = Consider top 90% probability mass
     - 0.5 = Consider top 50% probability mass (more focused)
@@ -233,10 +233,10 @@ class OllamaOptionTopP:
 class OllamaOptionTopK:
     """
     Control top-k sampling (Ollama-specific).
-    
+
     Limits the number of highest probability tokens to consider for each step.
     This is an Ollama-specific parameter not available in OpenAI's API.
-    
+
     - 40 = Consider top 40 tokens (default)
     - 10 = Very focused (only top 10 tokens)
     - 100 = More variety
@@ -287,14 +287,14 @@ class OllamaOptionTopK:
 class OllamaOptionRepeatPenalty:
     """
     Penalize repetition in generation (Ollama-specific).
-    
+
     Controls how much to penalize repeated tokens. Higher values make the
     model less likely to repeat the same phrases.
-    
+
     - 1.0 = No penalty (default)
     - 1.1 = Slight penalty
     - 1.5 = Strong penalty against repetition
-    
+
     This is more effective than OpenAI's frequency_penalty for Ollama models.
     """
 
@@ -343,10 +343,10 @@ class OllamaOptionRepeatPenalty:
 class OllamaOptionExtraBody:
     """
     Advanced Ollama parameters via JSON.
-    
+
     Allows setting any additional Ollama parameter not covered by other nodes.
     Input should be valid JSON object.
-    
+
     Useful parameters:
     - num_ctx: Context window size (e.g., 2048, 4096)
     - num_batch: Batch size for processing
@@ -356,7 +356,7 @@ class OllamaOptionExtraBody:
     - mirostat_tau: Mirostat target entropy
     - mirostat_eta: Mirostat learning rate
     - stop: Stop sequences (array of strings)
-    
+
     Example JSON:
     {"num_ctx": 4096, "num_gpu": 1, "stop": ["\\n\\n", "END"]}
     """
