@@ -102,6 +102,8 @@ For conversations with memory:
 
 ## Nodes Reference
 
+### Core Nodes
+
 | Node | Description |
 |------|-------------|
 | **Ollama Client** | Creates a reusable Ollama connection config |
@@ -109,6 +111,18 @@ For conversations with memory:
 | **Ollama Load Model** | Loads a model into Ollama's memory |
 | **Ollama Chat Completion** | Generate text with conversation history |
 | **Ollama Unload Model** | Unloads a model to free memory |
+
+### Option Nodes (Composable Parameters)
+
+| Node | Parameter | Range/Type | Default | Description |
+|------|-----------|------------|---------|-------------|
+| **Temperature** | `temperature` | 0.0-2.0 | 0.8 | Controls randomness (0=deterministic, 2=very random) |
+| **Seed** | `seed` | INT | 42 | Random seed for reproducible generation |
+| **Max Tokens** | `max_tokens` | 1-4096 | 128 | Maximum tokens to generate |
+| **Top P** | `top_p` | 0.0-1.0 | 0.9 | Nucleus sampling threshold |
+| **Top K** | `top_k` | 1-100 | 40 | Top-k sampling (Ollama-specific) |
+| **Repeat Penalty** | `repeat_penalty` | 0.0-2.0 | 1.1 | Penalty for repetition (Ollama-specific) |
+| **Extra Body** | `extra_body` | JSON | {} | Advanced parameters (num_ctx, num_gpu, etc.) |
 
 ## Advanced Usage
 
@@ -156,7 +170,32 @@ The architecture provides a clean, composable workflow:
 2. Unload Model
 ```
 
-This pattern optimizes memory by unloading models when not needed, while maintaining full conversation context.
+**Example Workflow: Chat with Options**
+
+```text
+[Client] → [Selector] → [Load Model]
+                           ↓
+       ┌───────────────────┴────────────────────┐
+       ↓                   ↓                     ↓
+[Temperature=0.7]    [Seed=42]          [MaxTokens=200]
+       └───────────────────┬────────────────────┘
+                           ↓ (merged options)
+                   [Chat Completion]
+                           ↓
+                    "Deterministic response"
+```
+
+**Example Workflow: Advanced Parameters**
+
+```text
+[Temperature=0.8] → [TopK=50] → [RepeatPenalty=1.2] → [ExtraBody]
+                                                           ↓
+                                                    {"num_ctx": 4096}
+                                                           ↓
+                                                    [Chat Completion]
+```
+
+This pattern optimizes memory by unloading models when not needed, while maintaining full conversation context and precise control over generation parameters.
 
 ## Configuration
 

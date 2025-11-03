@@ -252,17 +252,13 @@ class TestOllamaChatCompletionNode:
 
     def test_validate_inputs_empty_model(self):
         """Test validation rejects empty model."""
-        result = OllamaChatCompletion.VALIDATE_INPUTS(
-            model="", prompt="Test prompt"
-        )
+        result = OllamaChatCompletion.VALIDATE_INPUTS(model="", prompt="Test prompt")
         assert isinstance(result, str)
         assert "model" in result.lower()
 
     def test_validate_inputs_empty_prompt(self):
         """Test validation rejects empty prompt."""
-        result = OllamaChatCompletion.VALIDATE_INPUTS(
-            model="llama3.2", prompt=""
-        )
+        result = OllamaChatCompletion.VALIDATE_INPUTS(model="llama3.2", prompt="")
         assert isinstance(result, str)
         assert "prompt" in result.lower()
 

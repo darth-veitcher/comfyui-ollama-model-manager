@@ -175,10 +175,10 @@ async def chat_completion(
 ) -> Dict[str, Any]:
     """
     Generate chat completion using Ollama's /api/chat endpoint.
-    
+
     This function uses Ollama's OpenAI-compatible chat API to generate
     responses based on conversation history.
-    
+
     Args:
         endpoint: Base URL for Ollama API (e.g., http://localhost:11434)
         model: Name of the model to use for generation
@@ -194,7 +194,7 @@ async def chat_completion(
                  - num_ctx (int): Context window size
                  - And other Ollama-specific parameters
         images: Optional list of base64-encoded images for vision models
-    
+
     Returns:
         Response dict with structure:
         {
@@ -206,11 +206,11 @@ async def chat_completion(
             "done": true,
             ...additional metadata...
         }
-    
+
     Raises:
         httpx.HTTPError: If the request fails
         ValueError: If model or messages are invalid
-    
+
     Example:
         >>> messages = [
         ...     {"role": "system", "content": "You are helpful."},
@@ -226,53 +226,53 @@ async def chat_completion(
     """
     if not model or not model.strip():
         raise ValueError("Model name cannot be empty")
-    
+
     if not messages or not isinstance(messages, list):
         raise ValueError("Messages must be a non-empty list")
-    
+
     base = endpoint.rstrip("/")
     url = f"{base}/api/chat"
-    
+
     # Build request payload
     payload: Dict[str, Any] = {
         "model": model,
         "messages": messages,
         "stream": False,  # We want a single response, not streaming
     }
-    
+
     # Add optional parameters
     if options:
         payload["options"] = options
-    
+
     if images:
         # Add images to the last user message
         # This follows Ollama's vision API format
         if messages and messages[-1].get("role") == "user":
             messages[-1]["images"] = images
-    
+
     log.info(f"💬 Chat completion with model '{model}' ({len(messages)} messages)")
     log.debug(f"Messages: {messages}")
     if options:
         log.debug(f"Options: {options}")
-    
+
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             r = await client.post(url, json=payload)
-            
+
             # Log error details if request fails
             if r.status_code >= 400:
                 log.error(f"Ollama API error response: {r.text}")
-            
+
             r.raise_for_status()
             result = r.json()
-            
+
             # Extract response content for logging
             response_content = result.get("message", {}).get("content", "")
             log.info(f"✅ Generated {len(response_content)} characters")
             log.debug(f"Response: {response_content[:100]}...")
-            
+
             return result
-    
+
     except httpx.HTTPStatusError as e:
         log.error(f"❌ Chat completion failed: {e}")
         try:

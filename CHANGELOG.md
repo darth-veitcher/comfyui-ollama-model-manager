@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] - develop branch
 
-### Added - Phase 1: Chat Completion
+### Added - Phase 1: Chat Completion ✅
 
 - ✨ **OllamaChatCompletion node** - Full text generation with conversation history
 - 💬 Chat completion via Ollama's `/api/chat` endpoint
@@ -15,20 +15,46 @@ All notable changes to this project will be documented in this file.
 - 🔒 Type-safe connections with custom `OLLAMA_HISTORY` and `OLLAMA_OPTIONS` types
 - 📚 Updated documentation with chat examples and multi-turn workflows
 
+### Added - Phase 2: Option Nodes ✅
+
+- 🎛️ **7 Composable Option Nodes** - Chain parameters together
+  - **OllamaOptionTemperature** - Control randomness (0.0-2.0)
+  - **OllamaOptionSeed** - Reproducible generation with seed
+  - **OllamaOptionMaxTokens** - Limit response length (maps to num_predict)
+  - **OllamaOptionTopP** - Nucleus sampling (0.0-1.0)
+  - **OllamaOptionTopK** - Top-k sampling (Ollama-specific)
+  - **OllamaOptionRepeatPenalty** - Control repetition (Ollama-specific)
+  - **OllamaOptionExtraBody** - Advanced parameters via JSON
+- 🔗 Merge pattern from comfyui-openai-api for clean option chaining
+- ✅ JSON validation for ExtraBody node
+- 📝 44 comprehensive tests for all option nodes (96 total)
+- 📚 Documentation with option chaining examples
+
 ### Technical Changes
 
-- Added `src/comfyui_ollama_model_manager/chat.py` - Chat completion node implementation
-- Added `src/comfyui_ollama_model_manager/types.py` - Custom type definitions
-- Extended `ollama_client.py` with `chat_completion()` async function
-- Updated `__init__.py` to register OllamaChatCompletion node
-- Added `tests/test_chat.py` - 21 comprehensive tests
-- Updated README.md with chat documentation and workflow examples
-- Updated INTEGRATION_PROPOSAL.md with Phase 1-3 roadmap
+**Phase 1:**
+- Added `src/comfyui_ollama_model_manager/chat.py` - Chat completion node
+- Added `src/comfyui_ollama_model_manager/types.py` - Custom types
+- Extended `ollama_client.py` with `chat_completion()` function
+- Added `tests/test_chat.py` - 21 tests
+
+**Phase 2:**
+- Added `src/comfyui_ollama_model_manager/options.py` - 7 option nodes
+- Updated `__init__.py` to register all option nodes
+- Added `tests/test_options.py` - 44 tests
+- Updated README.md with option tables and examples
+
+### Test Results
+
+- **96 tests passing** (31 base + 21 chat + 44 options)
+- 100% coverage for chat and option functionality
+- All nodes tested for merge pattern, chaining, and validation
 
 ### Coming Next
 
-- Phase 2: Option nodes (Temperature, Seed, MaxTokens, TopP, TopK, RepeatPenalty)
 - Phase 3: Advanced features (streaming, JSON mode, function calling)
+- Integration testing with real Ollama instance
+- Example workflows and tutorials
 
 ## [1.0.0] - 2025-11-02
 
