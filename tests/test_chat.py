@@ -245,10 +245,54 @@ class TestOllamaChatCompletionNode:
         assert OllamaChatCompletion.RETURN_TYPES == ("STRING", "OLLAMA_HISTORY")
         assert OllamaChatCompletion.RETURN_NAMES == ("response", "history")
 
-    def test_is_changed_returns_nan(self):
-        """Test that IS_CHANGED returns NaN to force re-execution."""
-        result = OllamaChatCompletion.IS_CHANGED()
+    def test_is_changed_returns_nan_without_seed(self):
+        """Test that IS_CHANGED returns NaN when no seed is provided."""
+        result = OllamaChatCompletion.IS_CHANGED(
+            model="llama3.2",
+            prompt="Test",
+            options={"temperature": 0.7}  # No seed
+        )
         assert result != result  # NaN is not equal to itself
+        
+        # Also test with no options at all
+        result = OllamaChatCompletion.IS_CHANGED(
+            model="llama3.2",
+            prompt="Test"
+        )
+        assert result != result
+    
+    def test_is_changed_returns_hash_with_seed(self):
+        """Test that IS_CHANGED returns stable hash when seed is provided."""
+        options_with_seed = {"temperature": 0.7, "seed": 42}
+        
+        result1 = OllamaChatCompletion.IS_CHANGED(
+            model="llama3.2",
+            prompt="Test prompt",
+            system_prompt="System",
+            format="none",
+            options=options_with_seed
+        )
+        result2 = OllamaChatCompletion.IS_CHANGED(
+            model="llama3.2",
+            prompt="Test prompt",
+            system_prompt="System",
+            format="none",
+            options=options_with_seed
+        )
+        
+        # Same inputs should produce same hash (cacheable)
+        assert result1 == result2
+        assert isinstance(result1, int)  # Hash returns int
+        
+        # Different inputs should produce different hash
+        result3 = OllamaChatCompletion.IS_CHANGED(
+            model="llama3.2",
+            prompt="Different prompt",
+            system_prompt="System",
+            format="none",
+            options=options_with_seed
+        )
+        assert result1 != result3
 
     def test_validate_inputs_empty_model(self):
         """Test validation rejects empty model."""

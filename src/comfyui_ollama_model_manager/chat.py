@@ -103,15 +103,36 @@ class OllamaChatCompletion:
     @classmethod
     def IS_CHANGED(cls, **kwargs) -> float:
         """
-        Force node to always re-execute.
+        Cache behavior based on seed presence.
 
-        This ensures that chat completions are generated fresh on every run,
-        even if inputs haven't changed. This is important for non-deterministic
-        generation (when seed is not set).
+        If options contain a seed, the node will cache results (like standard ComfyUI nodes).
+        If no seed is present, returns NaN to force re-execution for non-deterministic generation.
+
+        This prevents unnecessary LLM calls when using deterministic generation with a seed.
+
+        Args:
+            **kwargs: Input parameters from the node
 
         Returns:
-            NaN to indicate the node should always be considered "changed"
+            NaN if no seed (always re-execute), or stable hash if seed present (cache results)
         """
+        options = kwargs.get("options")
+        
+        # If options exist and contain a seed, allow caching by returning a stable value
+        if options and isinstance(options, dict) and "seed" in options:
+            # Return a hash of all inputs for cache key
+            # This allows ComfyUI to cache results when inputs are identical
+            import json
+            cache_key = json.dumps({
+                "model": kwargs.get("model", ""),
+                "prompt": kwargs.get("prompt", ""),
+                "system_prompt": kwargs.get("system_prompt", ""),
+                "format": kwargs.get("format", "none"),
+                "options": options,
+            }, sort_keys=True)
+            return hash(cache_key)
+        
+        # No seed present - return NaN to force re-execution (non-deterministic)
         return float("nan")
 
     @classmethod

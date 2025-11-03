@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - feature/phase-3-advanced branch
+## [Unreleased] - develop branch
 
-### Added - Phase 3: Advanced Features (JSON Mode & Debug Utilities) 🚧
+### Added - Phase 3: Advanced Features (JSON Mode & Debug Utilities) ✅
 
 - 🔧 **JSON Mode** - Structured output for parseable data
   - Added `format` parameter to `chat_completion()` API
@@ -13,8 +13,12 @@ All notable changes to this project will be documented in this file.
 - 🐛 **Debug Utility Nodes** - Inspect conversation state
   - **OllamaDebugHistory** - Format conversation history as readable text
   - **OllamaHistoryLength** - Count messages in conversation
-- 📝 Comprehensive test coverage (11 new tests, 107 total)
-- 📚 Updated documentation with JSON mode examples and debug utilities
+- ⚡ **Smart Caching** - Intelligent result caching to prevent unnecessary LLM calls
+  - When seed is provided (via OllamaOptionSeed), results are cached like standard ComfyUI nodes
+  - Without seed, node always re-executes for non-deterministic generation
+  - Significantly reduces API costs when iterating on workflows
+- 📝 Comprehensive test coverage (12 new tests, 108 total)
+- 📚 Updated documentation with JSON mode examples, debug utilities, and caching behavior
 
 ### Technical Changes
 
@@ -23,13 +27,15 @@ All notable changes to this project will be documented in this file.
 - Updated `chat.py` to add format dropdown to OllamaChatCompletion
 - Added 2 debug nodes: `OllamaDebugHistory` and `OllamaHistoryLength`
 - Updated `__init__.py` to register debug nodes
+- **Improved `IS_CHANGED()` method** - Now returns stable hash when seed present, NaN otherwise
 - Added `tests/test_chat.py::TestPhase3Features` - 11 tests
-- Updated README.md with JSON mode section and debug utilities
+- Added caching behavior tests - 1 test (split from original IS_CHANGED test)
+- Updated README.md with JSON mode section, debug utilities, and caching documentation
 
 ### Test Results
 
-- **107 tests passing** (31 base + 32 chat + 44 options)
-- 100% coverage for Phase 3 features
+- **108 tests passing** (31 base + 33 chat + 44 options)
+- 100% coverage for Phase 3 features and caching behavior
 
 ## [Released] - main branch
 

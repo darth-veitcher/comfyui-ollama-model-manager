@@ -243,6 +243,22 @@ The **Ollama Chat Completion** node supports:
 - `response` - Generated text
 - `history` - Updated conversation (connect to next chat node)
 
+**Caching & Performance:**
+
+The chat node intelligently caches results to avoid unnecessary LLM calls:
+
+- **With Seed**: When you provide a seed via the `OllamaOptionSeed` node, identical inputs will be cached (like standard ComfyUI nodes). This prevents wasteful re-execution when re-running the same workflow.
+- **Without Seed**: When no seed is provided, the node will always re-execute to generate fresh, non-deterministic responses.
+
+**Example: Deterministic workflow with caching**
+```text
+[Seed=42] → [Chat Completion] → Output
+              ↓
+        (Cached on re-run!)
+```
+
+This matches ComfyUI's standard behavior and significantly reduces API costs when iterating on workflows.
+
 ### JSON Mode (Phase 3)
 
 The **format** parameter enables structured output for workflows that need parseable data:
