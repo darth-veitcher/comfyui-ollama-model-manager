@@ -10,9 +10,9 @@ from comfyui_ollama_model_manager.state import set_models
 def pytest_configure(config):
     """
     Configure pytest with custom warning filters.
-    
+
     This runs before tests and uses pytest's configuration API to add filters.
-    Suppresses RuntimeWarnings from unittest.mock internals which are false 
+    Suppresses RuntimeWarnings from unittest.mock internals which are false
     positives from mock's handling of async functions.
     """
     # Use pytest's addinivalue_line to add filters
@@ -28,9 +28,6 @@ def pytest_configure(config):
         "filterwarnings",
         "ignore::RuntimeWarning:_pytest.unraisableexception",
     )
-
-
-
 
 
 @pytest.fixture
