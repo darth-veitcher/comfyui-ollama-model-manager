@@ -275,13 +275,13 @@ Output: {"name": "Alice", "age": 30}
                       ↓
            Formatted Text Output:
            === Conversation History (3 messages) ===
-           
+
            [1] SYSTEM:
                You are helpful
-           
+
            [2] USER:
                Hello
-           
+
            [3] ASSISTANT:
                Hi there!
 ```

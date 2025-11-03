@@ -523,7 +523,9 @@ class TestPhase3Features:
         # run_async wraps the coroutine, so we check the args passed to the wrapped function
         call_args = mock_run_async.call_args
         # The chat_completion call is the first positional arg to run_async
-        assert "format" in str(call_args) or True  # Format is passed through generate method
+        assert (
+            "format" in str(call_args) or True
+        )  # Format is passed through generate method
         assert response == '{"result": "success"}'
 
     @patch("comfyui_ollama_model_manager.chat.run_async")

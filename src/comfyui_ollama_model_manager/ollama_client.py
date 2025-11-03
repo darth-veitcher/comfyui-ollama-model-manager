@@ -227,7 +227,7 @@ async def chat_completion(
         ...     options={"temperature": 0.7, "seed": 42}
         ... )
         >>> print(result["message"]["content"])
-        
+
         >>> # JSON mode example
         >>> result = await chat_completion(
         ...     "http://localhost:11434",

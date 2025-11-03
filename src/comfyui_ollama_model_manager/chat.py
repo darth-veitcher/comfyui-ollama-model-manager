@@ -288,7 +288,7 @@ class OllamaChatCompletion:
 class OllamaDebugHistory:
     """
     Debug node to inspect conversation history.
-    
+
     This utility node helps visualize and debug conversation history
     by converting it to a formatted string. Useful for:
     - Understanding conversation flow
@@ -315,45 +315,43 @@ class OllamaDebugHistory:
     CATEGORY = "Ollama/Debug"
     OUTPUT_NODE = True
 
-    def format_history(
-        self, history: List[Dict[str, str]]
-    ) -> Tuple[str]:
+    def format_history(self, history: List[Dict[str, str]]) -> Tuple[str]:
         """
         Format conversation history as readable text.
-        
+
         Args:
             history: List of message dicts from conversation
-        
+
         Returns:
             Tuple containing formatted history string
         """
         if not history:
             return ("(Empty history)",)
-        
+
         lines = []
         lines.append(f"=== Conversation History ({len(history)} messages) ===\n")
-        
+
         for i, msg in enumerate(history, 1):
             role = msg.get("role", "unknown")
             content = msg.get("content", "")
-            
+
             # Truncate very long messages
             if len(content) > 200:
                 content = content[:200] + "..."
-            
+
             lines.append(f"[{i}] {role.upper()}:")
             lines.append(f"    {content}\n")
-        
+
         formatted = "\n".join(lines)
         log.debug(f"Formatted history: {len(history)} messages")
-        
+
         return (formatted,)
 
 
 class OllamaHistoryLength:
     """
     Get the number of messages in conversation history.
-    
+
     Useful for conditional workflows or debugging.
     """
 
@@ -378,10 +376,10 @@ class OllamaHistoryLength:
     def get_length(self, history: List[Dict[str, str]]) -> Tuple[int]:
         """
         Get the number of messages in history.
-        
+
         Args:
             history: Conversation history
-        
+
         Returns:
             Tuple containing message count
         """
