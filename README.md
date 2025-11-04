@@ -769,7 +769,7 @@ Make sure Ollama is configured to accept remote connections (`OLLAMA_HOST=0.0.0.
 **A**: Depends on the model:
 
 - `llama3.2:1b` → ~1.5GB RAM/VRAM
-- `llama3.2:3b` → ~2.5GB RAM/VRAM  
+- `llama3.2:3b` → ~2.5GB RAM/VRAM
 - `llama3.2:8b` → ~5GB RAM/VRAM
 - `llama3.2:70b` → ~40GB RAM/VRAM
 
