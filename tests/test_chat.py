@@ -291,7 +291,7 @@ class TestOllamaChatCompletionNode:
 
     def test_validate_inputs_always_passes(self):
         """Test that VALIDATE_INPUTS always returns True.
-        
+
         Validation was removed because:
         1. ComfyUI was incorrectly applying validation errors to all fields
         2. Empty model/prompt validation happens at execution time with clearer errors

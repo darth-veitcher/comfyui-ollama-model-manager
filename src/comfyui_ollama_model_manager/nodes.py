@@ -61,15 +61,16 @@ class OllamaModelSelector:
 
     @classmethod
     def INPUT_TYPES(cls):
-        # Get cached models if available
-        cached_models = get_models(None)
-        # Provide a placeholder that won't make dropdown tiny
-        model_list = cached_models if cached_models else ["<connect client to fetch>"]
-
         return {
             "required": {
                 "client": ("OLLAMA_CLIENT",),
-                "model": (model_list,),  # COMBO with cached or empty list
+                "model": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Model name - will be auto-populated when you connect a client",
+                    },
+                ),
             },
             "optional": {
                 "refresh": ("BOOLEAN", {"default": False}),
@@ -78,20 +79,6 @@ class OllamaModelSelector:
                 "unique_id": "UNIQUE_ID",
             },
         }
-
-    @classmethod
-    def VALIDATE_INPUTS(cls, **kwargs) -> bool:
-        """
-        Always return True to allow any model name.
-        
-        This prevents validation errors when:
-        1. Loading workflows with models not in current cache
-        2. Models haven't been fetched yet from Ollama
-        3. Using custom/new model names before refresh
-        
-        Actual model validation happens at execution time with clear error messages.
-        """
-        return True
 
     RETURN_TYPES = ("OLLAMA_CLIENT", "STRING", "STRING")
     RETURN_NAMES = ("client", "model", "models_json")
