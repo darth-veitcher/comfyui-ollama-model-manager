@@ -9,6 +9,22 @@ from .log_config import get_logger, set_request_id
 from .ollama_client import fetch_models_from_ollama, load_model, unload_model
 from .state import get_endpoint, get_models, set_models
 
+
+class AnyType(str):
+    """A special type that is compatible with any other type in ComfyUI.
+    
+    This is used for wildcard/passthrough inputs and outputs that should accept
+    any connection type. The __ne__ override makes ComfyUI's type checking
+    accept this as compatible with all types.
+    
+    Credit: This pattern is used by pythongossss, rgthree, and ComfyUI-Impact-Pack.
+    """
+    def __ne__(self, __value: object) -> bool:
+        return False
+
+
+any_type = AnyType("*")
+
 log = get_logger()
 
 
@@ -166,11 +182,11 @@ class OllamaLoadModel:
                 ),
             },
             "optional": {
-                "dependencies": ("*",),
+                "dependencies": (any_type,),
             },
         }
 
-    RETURN_TYPES = ("OLLAMA_CLIENT", "STRING", "*")
+    RETURN_TYPES = ("OLLAMA_CLIENT", "STRING", any_type)
     RETURN_NAMES = ("client", "result", "dependencies")
     FUNCTION = "load_model_op"
     CATEGORY = "Ollama"
@@ -218,11 +234,11 @@ class OllamaUnloadModel:
                 "model": ("STRING",),
             },
             "optional": {
-                "dependencies": ("*",),
+                "dependencies": (any_type,),
             },
         }
 
-    RETURN_TYPES = ("OLLAMA_CLIENT", "STRING", "*")
+    RETURN_TYPES = ("OLLAMA_CLIENT", "STRING", any_type)
     RETURN_NAMES = ("client", "result", "dependencies")
     FUNCTION = "unload_model_op"
     CATEGORY = "Ollama"
