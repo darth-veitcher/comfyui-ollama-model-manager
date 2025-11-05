@@ -308,6 +308,69 @@ class TestOllamaChatCompletionNode:
         )
         assert result is True
 
+    def test_validate_inputs_handles_none_model(self):
+        """Test validation handles None model gracefully."""
+        result = OllamaChatCompletion.VALIDATE_INPUTS(model=None, prompt="Test")
+        assert isinstance(result, str)
+        assert "model" in result.lower()
+
+    def test_validate_inputs_handles_none_prompt(self):
+        """Test validation handles None prompt gracefully."""
+        result = OllamaChatCompletion.VALIDATE_INPUTS(model="llama3.2", prompt=None)
+        assert isinstance(result, str)
+        assert "prompt" in result.lower()
+
+    @patch("comfyui_ollama_model_manager.chat.run_async")
+    def test_generate_with_none_system_prompt(self, mock_run_async):
+        """Test that None system_prompt is handled correctly."""
+        mock_run_async.return_value = {
+            "message": {
+                "role": "assistant",
+                "content": "Hello!",
+            },
+            "done": True,
+        }
+
+        node = OllamaChatCompletion()
+        client = {"endpoint": "http://localhost:11434"}
+
+        # Test with explicit None
+        response, history = node.generate(
+            client=client,
+            model="llama3.2",
+            prompt="Hello",
+            system_prompt=None,
+        )
+
+        assert response == "Hello!"
+        assert len(history) == 2  # user + assistant, no system
+        assert history[0]["role"] == "user"
+
+    @patch("comfyui_ollama_model_manager.chat.run_async")
+    def test_generate_with_none_history(self, mock_run_async):
+        """Test that None history is handled correctly."""
+        mock_run_async.return_value = {
+            "message": {
+                "role": "assistant",
+                "content": "Hello!",
+            },
+            "done": True,
+        }
+
+        node = OllamaChatCompletion()
+        client = {"endpoint": "http://localhost:11434"}
+
+        # Test with explicit None history
+        response, history = node.generate(
+            client=client,
+            model="llama3.2",
+            prompt="Hello",
+            history=None,
+        )
+
+        assert response == "Hello!"
+        assert len(history) == 2  # Fresh conversation
+
     @patch("comfyui_ollama_model_manager.chat.run_async")
     def test_generate_simple_prompt(self, mock_run_async):
         """Test simple prompt generation."""

@@ -150,12 +150,12 @@ class OllamaChatCompletion:
         Returns:
             True if valid, error message string if invalid
         """
-        model = kwargs.get("model", "").strip()
-        if not model:
+        model = kwargs.get("model")
+        if not model or not model.strip():
             return "Model name cannot be empty. Please connect a model selector."
 
-        prompt = kwargs.get("prompt", "").strip()
-        if not prompt:
+        prompt = kwargs.get("prompt")
+        if not prompt or not prompt.strip():
             return "Prompt cannot be empty. Please provide a user message."
 
         return True
@@ -165,7 +165,7 @@ class OllamaChatCompletion:
         client: Dict[str, str],
         model: str,
         prompt: str,
-        system_prompt: str = "",
+        system_prompt: str | None = None,
         history: List[Dict[str, str]] | None = None,
         options: Dict[str, Any] | None = None,
         format: str = "none",
@@ -199,7 +199,7 @@ class OllamaChatCompletion:
             messages.extend(history)
 
         # Add system prompt if provided and not already in history
-        if system_prompt and system_prompt.strip():
+        if system_prompt is not None and system_prompt.strip():
             # Only add system prompt if it's not already the first message
             if not messages or messages[0].get("role") != "system":
                 messages.insert(
