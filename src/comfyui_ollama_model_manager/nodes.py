@@ -79,6 +79,20 @@ class OllamaModelSelector:
             },
         }
 
+    @classmethod
+    def VALIDATE_INPUTS(cls, **kwargs) -> bool:
+        """
+        Always return True to allow any model name.
+        
+        This prevents validation errors when:
+        1. Loading workflows with models not in current cache
+        2. Models haven't been fetched yet from Ollama
+        3. Using custom/new model names before refresh
+        
+        Actual model validation happens at execution time with clear error messages.
+        """
+        return True
+
     RETURN_TYPES = ("OLLAMA_CLIENT", "STRING", "STRING")
     RETURN_NAMES = ("client", "model", "models_json")
     FUNCTION = "select_model"
