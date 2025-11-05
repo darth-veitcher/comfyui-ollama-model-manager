@@ -150,14 +150,11 @@ class OllamaChatCompletion:
         Returns:
             True if valid, error message string if invalid
         """
-        model = kwargs.get("model")
-        if not model or not model.strip():
-            return "Model name cannot be empty. Please connect a model selector."
-
-        prompt = kwargs.get("prompt")
-        if not prompt or not prompt.strip():
-            return "Prompt cannot be empty. Please provide a user message."
-
+        # Note: We intentionally don't validate model or prompt here because:
+        # 1. Empty model validation happens at ComfyUI's node connection level
+        # 2. Empty strings are valid for optional text inputs (system_prompt)
+        # 3. Validation errors were being incorrectly applied to all fields
+        # Let the actual execution handle missing required values
         return True
 
     def generate(

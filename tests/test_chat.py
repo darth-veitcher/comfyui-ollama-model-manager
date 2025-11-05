@@ -289,36 +289,35 @@ class TestOllamaChatCompletionNode:
         )
         assert result1 != result3
 
-    def test_validate_inputs_empty_model(self):
-        """Test validation rejects empty model."""
+    def test_validate_inputs_always_passes(self):
+        """Test that VALIDATE_INPUTS always returns True.
+        
+        Validation was removed because:
+        1. ComfyUI was incorrectly applying validation errors to all fields
+        2. Empty model/prompt validation happens at execution time with clearer errors
+        3. Optional fields like system_prompt should allow empty values
+        """
+        # Test with empty model
         result = OllamaChatCompletion.VALIDATE_INPUTS(model="", prompt="Test prompt")
-        assert isinstance(result, str)
-        assert "model" in result.lower()
+        assert result is True
 
-    def test_validate_inputs_empty_prompt(self):
-        """Test validation rejects empty prompt."""
+        # Test with empty prompt
         result = OllamaChatCompletion.VALIDATE_INPUTS(model="llama3.2", prompt="")
-        assert isinstance(result, str)
-        assert "prompt" in result.lower()
+        assert result is True
 
-    def test_validate_inputs_valid(self):
-        """Test validation passes with valid inputs."""
+        # Test with valid inputs
         result = OllamaChatCompletion.VALIDATE_INPUTS(
             model="llama3.2", prompt="Test prompt"
         )
         assert result is True
 
-    def test_validate_inputs_handles_none_model(self):
-        """Test validation handles None model gracefully."""
+        # Test with None model
         result = OllamaChatCompletion.VALIDATE_INPUTS(model=None, prompt="Test")
-        assert isinstance(result, str)
-        assert "model" in result.lower()
+        assert result is True
 
-    def test_validate_inputs_handles_none_prompt(self):
-        """Test validation handles None prompt gracefully."""
+        # Test with None prompt
         result = OllamaChatCompletion.VALIDATE_INPUTS(model="llama3.2", prompt=None)
-        assert isinstance(result, str)
-        assert "prompt" in result.lower()
+        assert result is True
 
     @patch("comfyui_ollama_model_manager.chat.run_async")
     def test_generate_with_none_system_prompt(self, mock_run_async):
