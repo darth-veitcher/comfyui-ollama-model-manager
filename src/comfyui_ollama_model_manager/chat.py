@@ -129,7 +129,9 @@ class OllamaChatCompletion:
             image = kwargs.get("image")
 
             cache_data = {
-                "endpoint": client.get("endpoint", "") if isinstance(client, dict) else "",
+                "endpoint": (
+                    client.get("endpoint", "") if isinstance(client, dict) else ""
+                ),
                 "model": kwargs.get("model", ""),
                 "prompt": kwargs.get("prompt", ""),
                 "system_prompt": kwargs.get("system_prompt", ""),

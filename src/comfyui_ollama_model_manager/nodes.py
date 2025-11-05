@@ -12,13 +12,14 @@ from .state import get_endpoint, get_models, set_models
 
 class AnyType(str):
     """A special type that is compatible with any other type in ComfyUI.
-    
+
     This is used for wildcard/passthrough inputs and outputs that should accept
     any connection type. The __ne__ override makes ComfyUI's type checking
     accept this as compatible with all types.
-    
+
     Credit: This pattern is used by pythongossss, rgthree, and ComfyUI-Impact-Pack.
     """
+
     def __ne__(self, __value: object) -> bool:
         return False
 
