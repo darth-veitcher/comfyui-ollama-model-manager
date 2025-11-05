@@ -277,7 +277,8 @@ class TestOllamaChatCompletionNode:
 
         # Same inputs should produce same hash (cacheable)
         assert result1 == result2
-        assert isinstance(result1, int)  # Hash returns int
+        assert isinstance(result1, str)  # Hash returns stable string
+        assert len(result1) == 64  # SHA256 hex digest
 
         # Different inputs should produce different hash
         result3 = OllamaChatCompletion.IS_CHANGED(

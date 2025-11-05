@@ -121,12 +121,15 @@ class OllamaChatCompletion:
         if options and isinstance(options, dict) and "seed" in options:
             # Return a hash of all inputs for cache key
             # This allows ComfyUI to cache results when inputs are identical
+            import hashlib
             import json
 
+            client = kwargs.get("client", {})
             history = kwargs.get("history", [])
             image = kwargs.get("image")
 
             cache_data = {
+                "endpoint": client.get("endpoint", "") if isinstance(client, dict) else "",
                 "model": kwargs.get("model", ""),
                 "prompt": kwargs.get("prompt", ""),
                 "system_prompt": kwargs.get("system_prompt", ""),
@@ -141,9 +144,7 @@ class OllamaChatCompletion:
 
             cache_key = json.dumps(cache_data, sort_keys=True)
             # Use hashlib for stable hash across sessions (Python's hash() is randomized)
-            import hashlib
-
-            return int(hashlib.sha256(cache_key.encode()).hexdigest()[:16], 16)
+            return hashlib.sha256(cache_key.encode()).hexdigest()
 
         # No seed present - return NaN to force re-execution (non-deterministic)
         return float("nan")
