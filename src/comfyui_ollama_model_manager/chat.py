@@ -98,7 +98,6 @@ class OllamaChatCompletion:
     RETURN_NAMES = ("response", "history")
     FUNCTION = "generate"
     CATEGORY = "Ollama"
-    OUTPUT_NODE = True
 
     @classmethod
     def IS_CHANGED(cls, **kwargs) -> float:
